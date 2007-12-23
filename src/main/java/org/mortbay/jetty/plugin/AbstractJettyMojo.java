@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: AbstractJettyMojo.java 1906 2007-06-04 23:15:09Z janb $
+//$Id: AbstractJettyMojo.java 2262 2007-12-22 23:54:57Z gregw $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,10 +28,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.mortbay.jetty.plugin.util.JettyPluginServer;
-import org.mortbay.jetty.plugin.util.JettyPluginWebApplication;
 import org.mortbay.jetty.plugin.util.PluginLog;
 import org.mortbay.util.Scanner;
 import org.mortbay.jetty.plugin.util.SystemProperty;
+import org.mortbay.jetty.webapp.WebAppContext;
 
 
 
@@ -43,16 +43,18 @@ import org.mortbay.jetty.plugin.util.SystemProperty;
 public abstract class AbstractJettyMojo extends AbstractMojo
 {
     /**
-     * The "virtual" webapp created by the plugin
-     */
-    private JettyPluginWebApplication webapp;
-    
-    
-
-    /**
      * The proxy for the Server object
      */
-    private JettyPluginServer server;
+    protected JettyPluginServer server;
+    
+    
+    /**
+     * The "virtual" webapp created by the plugin
+     * @parameter
+     */
+    protected Jetty6PluginWebAppContext webAppConfig;
+    
+
     
     /**
      * The maven project.
@@ -61,7 +63,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @required
      * @readonly
      */
-    private MavenProject project;
+    protected MavenProject project;
     
 
     
@@ -72,7 +74,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter expression="/${project.artifactId}"
      * @required
      */
-    private String contextPath;
+    protected String contextPath;
     
     
     /**
@@ -82,7 +84,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter expression="${project.build.directory}/work"
      * @required
      */
-    private File tmpDirectory;
+    protected File tmpDirectory;
     
     
     
@@ -92,7 +94,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * 
      * @parameter 
      */
-    private File webDefaultXml;
+    protected File webDefaultXml;
     
     
     /**
@@ -102,7 +104,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * test, production etc. Optional.
      * @parameter
      */
-    private File overrideWebXml;
+    protected File overrideWebXml;
     
     /**
      * The interval in seconds to scan the webapp for changes 
@@ -111,7 +113,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter expression="0"
      * @required
      */
-    private int scanIntervalSeconds;
+    protected int scanIntervalSeconds;
     
     
     /**
@@ -120,7 +122,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * that have been set on the command line or by the JVM. Optional.
      * @parameter 
      */
-    private SystemProperty[] systemProperties;
+    protected SystemProperty[] systemProperties;
     
     
     
@@ -129,23 +131,37 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * will be applied before any plugin configuration. Optional.
      * @parameter
      */
-    private String jettyConfig;
+    protected File jettyConfig;
+    
+    /**
+     * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt; 
+     * -DSTOP.KEY=&lt;stopKey&gt; -jar start.jar --stop
+     * @parameter
+     */
+    protected int stopPort;
+    
+    /**
+     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
+     * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
+     * @parameter
+     */
+    protected String stopKey;
   
     
     /**
      * A scanner to check for changes to the webapp
      */
-    private Scanner scanner;
+    protected Scanner scanner;
     
     /**
      *  List of files and directories to scan
      */
-    private ArrayList scanList;
+    protected ArrayList scanList;
     
     /**
      * List of Listeners for the scanner
      */
-    private ArrayList scannerListeners;
+    protected ArrayList scannerListeners;
     
     
     public String PORT_SYSPROPERTY = "jetty.port";
@@ -226,20 +242,11 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return this.systemProperties;
     }
 
-    public String getJettyXmlFileName ()
+    public File getJettyXmlFile ()
     {
         return this.jettyConfig;
     }
 
-    public JettyPluginWebApplication getWebApplication()
-    {
-        return this.webapp;
-    }
-    
-    public void setWebApplication (JettyPluginWebApplication webapp)
-    {
-        this.webapp = webapp;
-    }
 
     public JettyPluginServer getServer ()
     {
@@ -325,9 +332,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             
             //set up the webapp and any context provided
             getServer().configureHandlers();
-            setWebApplication(getServer().createWebApplication());  
             configureWebApplication();
-            getServer().addWebApplication(getWebApplication());
+            getServer().addWebApplication(webAppConfig);
             
             
             // set up security realms
@@ -341,6 +347,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             //particular Jetty version
             finishConfigurationBeforeStart();   
             
+            if(stopPort>0 && stopKey!=null)
+            {
+                System.setProperty("STOP.PORT", String.valueOf(stopPort));
+                System.setProperty("STOP.KEY", stopKey);
+                org.mortbay.start.Monitor.monitor();
+            }
             // start Jetty
             server.start();
 
@@ -349,7 +361,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             // start the scanner thread (if necessary) on the main webapp
             configureScanner ();            
             startScanner();
-            
+
             // keep the thread going
             server.join();
         }
@@ -374,19 +386,25 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     public void configureWebApplication () throws Exception
     {
-        if (getWebApplication() == null)
-            return;
-        
-        JettyPluginWebApplication webapp = getWebApplication();
-        webapp.setTempDirectory(getTmpDirectory());
-        webapp.setWebDefaultXmlFile(getWebDefaultXml());
-        String contextPath = getContextPath();
-        webapp.setContextPath((contextPath.startsWith("/") ? contextPath : "/"+ contextPath));
-        webapp.setOverrideWebXmlFile(getOverrideWebXml());
-        getLog().info("Context path = " + webapp.getContextPath());
-        getLog().info("Tmp directory = "+(getTmpDirectory()==null?" jetty default":getTmpDirectory().toString()));
-        getLog().info("Web defaults = "+(getWebDefaultXml()==null?" jetty default":getWebDefaultXml().toString()));
-        getLog().info("Web overrides = "+(getOverrideWebXml()==null?" none":getOverrideWebXml().toString()));
+        //use EITHER a <webAppConfig> element or the now deprecated <contextPath>, <tmpDirectory>, <webDefaultXml>, <overrideWebXml>
+        //way of doing things
+        if (webAppConfig == null)
+        {
+            webAppConfig = new Jetty6PluginWebAppContext();
+            webAppConfig.setContextPath((getContextPath().startsWith("/") ? getContextPath() : "/"+ getContextPath()));
+            if (getTmpDirectory() != null)
+                webAppConfig.setTempDirectory(getTmpDirectory());          
+            if (getWebDefaultXml() != null)
+                webAppConfig.setDefaultsDescriptor(getWebDefaultXml().getCanonicalPath());
+            if (getOverrideWebXml() != null)
+                webAppConfig.setOverrideDescriptor(getOverrideWebXml().getCanonicalPath());
+        }
+
+          
+        getLog().info("Context path = " + webAppConfig.getContextPath());
+        getLog().info("Tmp directory = "+ " determined at runtime");
+        getLog().info("Web defaults = "+(webAppConfig.getDefaultsDescriptor()==null?" jetty default":webAppConfig.getDefaultsDescriptor()));
+        getLog().info("Web overrides = "+(webAppConfig.getOverrideDescriptor()==null?" none":webAppConfig.getOverrideDescriptor()));
         
     }
     

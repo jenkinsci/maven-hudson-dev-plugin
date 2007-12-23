@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6RunWar.java 1889 2007-06-01 02:25:22Z janb $
+//$Id: Jetty6RunWar.java 2094 2007-09-10 06:11:26Z janb $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,8 +73,8 @@ public class Jetty6RunWar extends AbstractJetty6Mojo
     {
         super.configureWebApplication();
         
-        getWebApplication().setWebAppSrcDir(webApp);
-        getWebApplication().configure();
+        webAppConfig.setWar(webApp.getCanonicalPath());
+        webAppConfig.configure();
     }
  
 
@@ -108,7 +108,7 @@ public class Jetty6RunWar extends AbstractJetty6Mojo
                 {
                     getLog().info("Restarting webapp ...");
                     getLog().debug("Stopping webapp ...");
-                    getWebApplication().stop();
+                    webAppConfig.stop();
                     getLog().debug("Reconfiguring webapp ...");
 
                     checkPomConfiguration();
@@ -127,7 +127,7 @@ public class Jetty6RunWar extends AbstractJetty6Mojo
                     }
 
                     getLog().debug("Restarting webapp ...");
-                    getWebApplication().start();
+                    webAppConfig.start();
                     getLog().info("Restart completed.");
                 }
                 catch (Exception e)

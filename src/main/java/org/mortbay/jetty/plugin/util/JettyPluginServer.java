@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: JettyPluginServer.java 1906 2007-06-04 23:15:09Z janb $
+//$Id: JettyPluginServer.java 2094 2007-09-10 06:11:26Z janb $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,8 @@
 //========================================================================
 
 package org.mortbay.jetty.plugin.util;
+
+import org.mortbay.jetty.webapp.WebAppContext;
 
 /**
  * JettyPluginServer
@@ -37,13 +39,11 @@ public interface JettyPluginServer extends Proxy
     
     public void configureHandlers () throws Exception;
     
-    public  void addWebApplication (JettyPluginWebApplication webapp) throws Exception;
+    public  void addWebApplication (WebAppContext webapp) throws Exception;
     
     public  void start() throws Exception;
     
     public Object createDefaultConnector (String port) throws Exception;
-    
-    public JettyPluginWebApplication createWebApplication () throws Exception;
     
     public void join () throws Exception;
 

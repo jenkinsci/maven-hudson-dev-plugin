@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6RunMojo.java 1889 2007-06-01 02:25:22Z janb $
+//$Id: Jetty6RunMojo.java 2147 2007-10-23 05:08:49Z gregw $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -166,12 +166,11 @@ public class Jetty6RunMojo extends AbstractJettyRunMojo
     
     public void applyJettyXml() throws Exception
     {
-        if (getJettyXmlFileName() == null)
+        if (getJettyXmlFile() == null)
             return;
         
-        getLog().info( "Configuring Jetty from xml configuration file = " + getJettyXmlFileName() );
-        File f = new File(getJettyXmlFileName());
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(f.toURL());
+        getLog().info( "Configuring Jetty from xml configuration file = " + getJettyXmlFile() );        
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(getJettyXmlFile().toURL());
         xmlConfiguration.configure(getServer().getProxiedObject());   
     }
 
@@ -180,12 +179,6 @@ public class Jetty6RunMojo extends AbstractJettyRunMojo
     
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        ClassLoader ccl = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(new MaskingClassLoader(ccl));
-        try {
-            super.execute();
-        } finally {
-            Thread.currentThread().setContextClassLoader(ccl);
-        }
+        super.execute();
     }
 }

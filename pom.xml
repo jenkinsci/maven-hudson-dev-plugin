@@ -2,12 +2,12 @@
   <parent>
     <artifactId>project</artifactId>
     <groupId>org.mortbay.jetty</groupId>
-    <version>6.1.5</version>
+    <version>6.1.7</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.jvnet.hudson.tools</groupId>
-  <artifactId>maven-hudson-plugin</artifactId>
+  <groupId>org.mortbay.jetty</groupId>
+  <artifactId>maven-jetty-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Maven Jetty Plugin</name>
   <developers>
@@ -27,41 +27,9 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-        </configuration>
-      </plugin>
     </plugins>
-    <extensions>
-      <extension>
-        <groupId>org.jvnet.wagon-svn</groupId>
-        <artifactId>wagon-svn</artifactId>
-        <version>1.2</version>
-      </extension>
-    </extensions>
   </build>
   <dependencies>
-    <dependency>
-      <groupId>commons-el</groupId>
-      <artifactId>commons-el</artifactId>
-      <exclusions>
-        <exclusion>
-          <artifactId>log4j</artifactId>
-          <groupId>log4j</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>commons-logging</artifactId>
-          <groupId>commons-logging</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>logkit</artifactId>
-          <groupId>logkit</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty</artifactId>
@@ -92,10 +60,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>ant</groupId>
-      <artifactId>ant</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty-naming</artifactId>
       <version>${project.version}</version>
@@ -122,14 +86,6 @@
       </plugin>
     </plugins>
   </reporting -->
-
-  <distributionManagement>
-    <repository>
-      <uniqueVersion>false</uniqueVersion>
-      <id>java.net-m2-repository</id>
-      <url>svn:https://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url>
-    </repository>
-  </distributionManagement>
 
   <profiles>
     <profile>
@@ -189,6 +145,11 @@
           <artifactId>jetty-annotations</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>start</artifactId>
+          <version>${project.version}</version>
+        </dependency>        
       </dependencies>
     </profile>
   </profiles>

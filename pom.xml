@@ -6,8 +6,8 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.mortbay.jetty</groupId>
-  <artifactId>maven-jetty-plugin</artifactId>
+  <groupId>org.jvnet.hudson.tools</groupId>
+  <artifactId>maven-hudson-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Maven Jetty Plugin</name>
   <developers>
@@ -27,7 +27,21 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.jvnet.wagon-svn</groupId>
+        <artifactId>wagon-svn</artifactId>
+        <version>1.2</version>
+      </extension>
+    </extensions>
   </build>
   <dependencies>
     <dependency>
@@ -86,6 +100,14 @@
       </plugin>
     </plugins>
   </reporting -->
+
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>java.net-m2-repository</id>
+      <url>svn:https://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url>
+    </repository>
+  </distributionManagement>
 
   <profiles>
     <profile>

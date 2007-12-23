@@ -179,6 +179,12 @@ public class Jetty6RunMojo extends AbstractJettyRunMojo
     
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        super.execute();
+        ClassLoader ccl = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(new MaskingClassLoader(ccl));
+        try {
+            super.execute();
+        } finally {
+            Thread.currentThread().setContextClassLoader(ccl);
+        }
     }
 }

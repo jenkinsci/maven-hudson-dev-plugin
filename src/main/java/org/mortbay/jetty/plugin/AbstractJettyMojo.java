@@ -22,16 +22,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
+import org.mortbay.jetty.plugin.util.ConsoleScanner;
 import org.mortbay.jetty.plugin.util.JettyPluginServer;
 import org.mortbay.jetty.plugin.util.PluginLog;
-import org.mortbay.util.Scanner;
 import org.mortbay.jetty.plugin.util.SystemProperty;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.mortbay.util.Scanner;
 
 
 
@@ -108,12 +107,22 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     /**
      * The interval in seconds to scan the webapp for changes 
-     * and restart the context if necessary. Disabled by default.
+     * and restart the context if necessary. Ignored if consoleForceReload
+     * is enabled. Disabled by default.
      * 
-     * @parameter expression="0"
+     * @parameter expression="${jetty.scanIntervalSeconds}" default-value="0"
      * @required
      */
     protected int scanIntervalSeconds;
+    
+    
+    /**
+     * If true, the context will be restarted after a line feed on
+     * the input console. Disabled by default.
+     * 
+     * @parameter expression="${jetty.consoleForceReload}" default-value="false"
+     */
+    protected boolean consoleForceReload;
     
     
     /**
@@ -163,6 +172,12 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected ArrayList scannerListeners;
     
+    
+    /**
+     * A scanner to check ENTER hits on the console
+     */
+    protected Thread consoleScanner;
+
     
     public String PORT_SYSPROPERTY = "jetty.port";
     
@@ -359,8 +374,11 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             getLog().info("Started Jetty Server");
             
             // start the scanner thread (if necessary) on the main webapp
-            configureScanner ();            
+            configureScanner ();
             startScanner();
+            
+            // start the new line scanner thread if necessary
+            startConsoleScanner();
 
             // keep the thread going
             server.join();
@@ -377,6 +395,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     }
     
     
+    public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
     /**
      * Subclasses should invoke this to setup basic info
@@ -416,8 +435,19 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     private void startScanner()
     {
+
         // check if scanning is enabled
         if (getScanIntervalSeconds() <= 0) return;
+
+
+        // check if consoleForceReload is enabled. It disables file scanning
+        if (consoleForceReload) 
+        {
+            // issue a warning if both scanIntervalSeconds and consoleForceReload 
+            // are enabled
+            getLog().warn("scanIntervalSeconds is set to " + scanIntervalSeconds + " but will be IGNORED due to consoleForceReload");
+            return;
+        }
 
         scanner = new Scanner();
         scanner.setReportExistingFilesOnStartup(false);
@@ -431,6 +461,20 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         scanner.start();
     }
     
+    /**
+     * Run a thread that monitors the console input to detect ENTER hits.
+     */
+    protected void startConsoleScanner() 
+    {
+        if (consoleForceReload)
+        {
+            getLog().info("Console reloading is ENABLED. Hit ENTER on the console to restart the context.");
+            consoleScanner = new ConsoleScanner(this);
+            consoleScanner.start();
+        }
+        
+    }
+
     private void configureSystemProperties ()
     {
         // get the system properties set up

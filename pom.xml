@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jvnet.hudson.tools</groupId>
-  <artifactId>maven-hudson-plugin</artifactId>
+  <artifactId>maven-hudson-dev-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Maven Jetty Plugin</name>
   <developers>

@@ -17,8 +17,9 @@ final class MaskingClassLoader extends ClassLoader {
     }
 
     protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if(name.startsWith("org.apache.maven") || name.startsWith("org.codehaus.plexus"))
-            throw new ClassNotFoundException(name);
+        for (String pkg : PACKAGES)
+            if(name.startsWith(pkg))
+                throw new ClassNotFoundException(name);
         return super.loadClass(name, resolve);
     }
 
@@ -29,9 +30,10 @@ final class MaskingClassLoader extends ClassLoader {
     }
 
     private boolean isMaskedResourcePrefix(String name) {
-        return name.startsWith("org/apache/maven")
-            || name.startsWith("org/codehaus/plexus")
-            || name.startsWith("META-INF/plexus")
+        for (String p : PREFIXES)
+            if (name.startsWith(p))
+                return true;
+        return name.startsWith("META-INF/plexus")
             || name.startsWith("META-INF/maven");
     }
 
@@ -50,4 +52,18 @@ final class MaskingClassLoader extends ClassLoader {
             throw new NoSuchElementException();
         }
     };
+
+    private static final String[] PACKAGES = {
+        "org.apache.maven.",
+        "org.codehaus.plexus.",
+        "org.sonatype."
+    };
+
+    private static final String[] PREFIXES;
+
+    static {
+        PREFIXES = new String[PACKAGES.length];
+        for (int i=0; i<PACKAGES.length; i++)
+            PREFIXES[i] = PACKAGES[i].replace('.','/');
+    }
 }

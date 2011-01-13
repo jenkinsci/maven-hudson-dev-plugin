@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jvnet.hudson.tools</groupId>
   <artifactId>maven-hudson-dev-plugin</artifactId>
-  <version>6.1.7-hudson-1</version>
+  <version>6.1.7-hudson-2-SNAPSHOT</version>
 
   <packaging>maven-plugin</packaging>
   <name>Maven Jetty Plugin</name>

@@ -105,9 +105,8 @@
 
   <distributionManagement>
     <repository>
-      <uniqueVersion>false</uniqueVersion>
       <id>java.net-m2-repository</id>
-      <url>svn:https://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url>
+      <url>http://maven.hudson-labs.org:8081/content/repositories/releases</url>
     </repository>
   </distributionManagement>
 
@@ -178,6 +177,11 @@
     </profile>
   </profiles>
 
+  <scm>
+    <connection       >scm:git:git://github.com/hudson/maven-hudson-dev-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:hudson/maven-hudson-dev-plugin.git</developerConnection>
+  </scm>
+  
   <repositories>
     <repository>
       <id>maven2-repository.dev.java.net</id>

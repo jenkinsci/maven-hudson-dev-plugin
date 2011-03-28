@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6PluginServer.java 1906 2007-06-04 23:15:09Z janb $
+//$Id: Jetty6PluginServer.java 2094 2007-09-10 06:11:26Z janb $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,9 +26,9 @@ import org.mortbay.jetty.handler.HandlerCollection;
 import org.mortbay.jetty.handler.RequestLogHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.plugin.util.JettyPluginServer;
-import org.mortbay.jetty.plugin.util.JettyPluginWebApplication;
 import org.mortbay.jetty.plugin.util.PluginLog;
 import org.mortbay.jetty.security.UserRealm;
+import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 
 /**
@@ -143,9 +143,9 @@ public class Jetty6PluginServer implements JettyPluginServer
     /**
      * @see org.mortbay.jetty.plugin.util.JettyPluginServer#addWebApplication(java.lang.Object)
      */
-    public void addWebApplication(JettyPluginWebApplication webapp) throws Exception
+    public void addWebApplication(WebAppContext webapp) throws Exception
     {  
-        contexts.addHandler ((Handler)webapp.getProxiedObject());
+        contexts.addHandler (webapp);
     }
 
     
@@ -199,15 +199,6 @@ public class Jetty6PluginServer implements JettyPluginServer
     }
     
  
-
-    /**
-     * @see org.mortbay.jetty.plugin.util.JettyPluginServer#createWebApplication()
-     */
-    public JettyPluginWebApplication createWebApplication() throws Exception
-    {
-        return new Jetty6PluginWebApplication();
-    }
-
 
 
     public void join () throws Exception

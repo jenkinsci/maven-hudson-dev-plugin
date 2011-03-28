@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: AbstractJettyRunMojo.java 1889 2007-06-01 02:25:22Z janb $
+//$Id: AbstractJettyRunMojo.java 2147 2007-10-23 05:08:49Z gregw $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@ import java.util.List;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.mortbay.jetty.plugin.util.JettyPluginWebApplication;
 import org.mortbay.util.Scanner;
 import org.mortbay.jetty.plugin.util.ScanTargetPattern;
 import org.codehaus.plexus.util.FileUtils;
@@ -54,7 +53,7 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      * The location of a jetty-env.xml file. Optional.
      * @parameter
      */
-    private String jettyEnvXml;
+    private File jettyEnvXml;
     
     /**
      * The location of the web.xml file. If not
@@ -62,7 +61,7 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      * 
      * @parameter expression="${maven.war.webxml}"
      */
-    private String webXml;
+    private File webXml;
     
     /**
      * The directory containing generated classes.
@@ -134,12 +133,12 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      */
     private List extraScanTargets;
 
-    public String getWebXml()
+    public File getWebXml()
     {
         return this.webXml;
     }
     
-    public String getJettyEnvXml ()
+    public File getJettyEnvXml ()
     {
         return this.jettyEnvXml;
     }
@@ -231,10 +230,9 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
        
         // get the web.xml file if one has been provided, otherwise assume it is
         // in the webapp src directory
-        if (getWebXml() == null || (getWebXml().trim().equals("")))
-            setWebXmlFile(new File(new File(getWebAppSourceDirectory(),"WEB-INF"), "web.xml"));
-        else
-            setWebXmlFile(new File(getWebXml()));
+        if (getWebXml() == null )
+            webXml = new File(new File(getWebAppSourceDirectory(),"WEB-INF"), "web.xml");
+        setWebXmlFile(webXml);
         
         try
         {
@@ -253,7 +251,7 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
         //check if a jetty-env.xml location has been provided, if so, it must exist
         if  (getJettyEnvXml() != null)
         {
-            setJettyEnvXmlFile(new File(getJettyEnvXml()));
+            setJettyEnvXmlFile(jettyEnvXml);
             
             try
             {
@@ -288,16 +286,6 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
             throw new MojoExecutionException("Location of classesDirectory does not exist");
         }
         
-        // check the tmp directory
-        if (getTmpDirectory() != null)
-        {
-            if (!getTmpDirectory().exists())
-            {
-                if (!getTmpDirectory().mkdirs())
-                    throw new MojoExecutionException("Unable to create tmp directory at " + getTmpDirectory());
-            }
-            
-        }
         
         
         if (scanTargets == null)
@@ -363,16 +351,14 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
     public void configureWebApplication() throws Exception
     {
        super.configureWebApplication();
-        
-        JettyPluginWebApplication webapp = getWebApplication();
         setClassPathFiles(setUpClassPath());
-        webapp.setWebXmlFile(getWebXmlFile());
-        webapp.setJettyEnvXmlFile(getJettyEnvXmlFile());
-        webapp.setClassPathFiles(getClassPathFiles());
-        webapp.setWebAppSrcDir(getWebAppSourceDirectory());
+        webAppConfig.setWebXmlFile(getWebXmlFile());
+        webAppConfig.setJettyEnvXmlFile(getJettyEnvXmlFile());
+        webAppConfig.setClassPathFiles(getClassPathFiles());
+        webAppConfig.setWar(getWebAppSourceDirectory().getCanonicalPath());
         getLog().info("Webapp directory = " + getWebAppSourceDirectory().getCanonicalPath());
 
-        webapp.configure();
+        webAppConfig.configure();
     }
     
     public void configureScanner ()
@@ -396,9 +382,9 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
             {
                 try
                 {
-                    getLog().info("restarting "+getWebApplication());
+                    getLog().info("restarting "+webAppConfig);
                     getLog().debug("Stopping webapp ...");
-                    getWebApplication().stop();
+                    webAppConfig.stop();
                     getLog().debug("Reconfiguring webapp ...");
 
                     checkPomConfiguration();
@@ -420,7 +406,7 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
                     }
 
                     getLog().debug("Restarting webapp ...");
-                    getWebApplication().start();
+                    webAppConfig.start();
                     getLog().info("Restart completed at "+new Date().toString());
                 }
                 catch (Exception e)

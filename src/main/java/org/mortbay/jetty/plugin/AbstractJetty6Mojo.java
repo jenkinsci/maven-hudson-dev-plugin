@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: AbstractJetty6Mojo.java 669 2006-07-10 10:51:55Z janb $
+//$Id: AbstractJetty6Mojo.java 2147 2007-10-23 05:08:49Z gregw $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,12 +84,11 @@ public abstract class AbstractJetty6Mojo extends AbstractJettyMojo
     public void applyJettyXml() throws Exception
     {
         
-        if (getJettyXmlFileName() == null)
+        if (getJettyXmlFile() == null)
             return;
         
-        getLog().info( "Configuring Jetty from xml configuration file = " + getJettyXmlFileName() );
-        File f = new File (getJettyXmlFileName());
-        XmlConfiguration xmlConfiguration = new XmlConfiguration(f.toURL());
+        getLog().info( "Configuring Jetty from xml configuration file = " + getJettyXmlFile() );        
+        XmlConfiguration xmlConfiguration = new XmlConfiguration(getJettyXmlFile().toURL());
         xmlConfiguration.configure(getServer().getProxiedObject());   
     }
 

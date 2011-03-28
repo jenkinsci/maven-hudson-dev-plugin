@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: SystemProperty.java 661 2006-07-06 10:38:27Z janb $
+//$Id: SystemProperty.java 3907 2008-10-28 00:39:40Z janb $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,62 +28,67 @@ package org.mortbay.jetty.plugin.util;
  */
 public class SystemProperty
 {
-	
-	
-	private String name;
-	private String value;
-	/**
-	 * @return Returns the name.
-	 */
-	public String getName()
-	{
-		return this.name;
-	}
-	/**
-	 * @param name The name to set.
-	 */
-	public void setName(String name)
-	{
-		this.name = name;
-	}
+
+
+    private String name;
+    private String value;
+    private boolean isSet;
     
+    /**
+     * @return Returns the name.
+     */
+    public String getName()
+    {
+        return this.name;
+    }
+    /**
+     * @param name The name to set.
+     */
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
     public String getKey()
     {
         return this.name;
     }
-    
+
     public void setKey (String name)
     {
         this.name = name;
     }
-	/**
-	 * @return Returns the value.
-	 */
-	public String getValue()
-	{
-		return this.value;
-	}
-	/**
-	 * @param value The value to set.
-	 */
-	public void setValue(String value)
-	{
-		this.value = value;
-	}
-	
-	/** Set a System.property with this value
-	 * if it is not already set.
-	 * @return
-	 */
-	public boolean setIfNotSetAlready()
-	{
-    	if (System.getProperty(getName()) == null)
-    	{
-    		System.setProperty(getName(), (getValue()==null?"":getValue()));
-    		return true;
-    	}
-    	
-    	return false;
-	}
-	
+    /**
+     * @return Returns the value.
+     */
+    public String getValue()
+    {
+        return this.value;
+    }
+    /**
+     * @param value The value to set.
+     */
+    public void setValue(String value)
+    {
+        this.value = value;
+    }
+
+    
+    public boolean isSet ()
+    {
+        return isSet;
+    }
+    
+    /** Set a System.property with this value
+     * if it is not already set.
+     */
+    void setIfNotSetAlready()
+    {
+        if (System.getProperty(getName()) == null)
+        {
+            System.setProperty(getName(), (getValue()==null?"":getValue()));
+            isSet=true;
+        }
+    }
+
 }

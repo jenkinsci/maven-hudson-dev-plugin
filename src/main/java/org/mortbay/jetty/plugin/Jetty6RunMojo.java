@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6RunMojo.java 2147 2007-10-23 05:08:49Z gregw $
+//$Id: Jetty6RunMojo.java 2299 2008-01-03 23:40:50Z janb $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,7 +64,9 @@ public class Jetty6RunMojo extends AbstractJettyRunMojo
     
     /**
      * List of connectors to use. If none are configured
-     * then we use a single SelectChannelConnector at port 8080
+     * then the default is a single SelectChannelConnector at port 8080. You can
+     * override this default port number by using the system property jetty.port
+     * on the command line, eg:  mvn -Djetty.port=9999 jetty:run
      * 
      * @parameter 
      */

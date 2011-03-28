@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: AbstractJettyRunMojo.java 2147 2007-10-23 05:08:49Z gregw $
+//$Id: AbstractJettyRunMojo.java 5224 2009-05-29 07:56:29Z dyu $
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.plexus.util.FileUtils;
 import org.mortbay.jetty.plugin.util.ScanTargetPattern;
+import org.mortbay.resource.Resource;
+import org.mortbay.resource.ResourceCollection;
 import org.mortbay.util.Scanner;
 
 /**
@@ -132,6 +134,11 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      * Extra scan targets as a list
      */
     private List extraScanTargets;
+    
+    /**
+     * overlays (resources)
+     */
+    private List _overlays;
 
     public File getWebXml()
     {
@@ -211,6 +218,9 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      */
     public void checkPomConfiguration () throws MojoExecutionException
     {
+        File buildDir = new File(getProject().getBuild().getDirectory());
+        if(!buildDir.exists())
+            buildDir.mkdir();
         // check the location of the static content/jsps etc
         try
         {
@@ -227,27 +237,16 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
             throw new MojoExecutionException("Webapp source directory does not exist", e);
         }
         
-       
-        // get the web.xml file if one has been provided, otherwise assume it is
-        // in the webapp src directory
-        if (getWebXml() == null )
-            webXml = new File(new File(getWebAppSourceDirectory(),"WEB-INF"), "web.xml");
-        setWebXmlFile(webXml);
-        
-        try
+        // check reload mechanic
+        if ( !"automatic".equalsIgnoreCase( reload ) && !"manual".equalsIgnoreCase( reload ) )
         {
-            if (!getWebXmlFile().exists())
-                throw new MojoExecutionException( "web.xml does not exist at location "
-                        + webXmlFile.getCanonicalPath());
-            else
-                getLog().info( "web.xml file = "
-                        + webXmlFile.getCanonicalPath());
+            throw new MojoExecutionException( "invalid reload mechanic specified, must be 'automatic' or 'manual'" );
         }
-        catch (IOException e)
+        else
         {
-            throw new MojoExecutionException("web.xml does not exist", e);
+            getLog().info("Reload Mechanic: " + reload );
         }
-        
+      
         //check if a jetty-env.xml location has been provided, if so, it must exist
         if  (getJettyEnvXml() != null)
         {
@@ -287,18 +286,14 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
         }
         
         
-        
-        if (scanTargets == null)
-            setExtraScanTargets(Collections.EMPTY_LIST);
-        else
-        {
-            ArrayList list = new ArrayList();
+        setExtraScanTargets(new ArrayList());
+        if (scanTargets != null)
+        {            
             for (int i=0; i< scanTargets.length; i++)
             {
                 getLog().info("Added extra scan target:"+ scanTargets[i]);
-                list.add(scanTargets[i]);
-            }
-            setExtraScanTargets(list);
+                getExtraScanTargets().add(scanTargets[i]);
+            }            
         }
         
         
@@ -332,7 +327,11 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
                     itor = files.iterator();
                     while (itor.hasNext())
                         getLog().info("Adding extra scan target from pattern: "+itor.next());
-                    setExtraScanTargets(files);
+                    List currentTargets = getExtraScanTargets();
+                    if(currentTargets!=null && !currentTargets.isEmpty())
+                        currentTargets.addAll(files);
+                    else
+                        setExtraScanTargets(files);
                 }
                 catch (IOException e)
                 {
@@ -344,7 +343,36 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
         }
     }
 
-   
+    private void checkWebXml() throws MojoExecutionException
+    {
+        // get the web.xml file if one has been provided, otherwise assume it is
+        // in the webapp src directory
+        if (getWebXml() == null )
+            webXml = new File(new File(getWebAppSourceDirectory(),"WEB-INF"), "web.xml");
+        setWebXmlFile(webXml);
+        
+        try
+        {
+            if (!getWebXmlFile().exists())
+            {
+                Resource resource = webAppConfig.getBaseResource().addPath("WEB-INF/web.xml");
+                if(!resource.exists())
+                {
+                    
+                    throw new MojoExecutionException( "web.xml does not exist at location "
+                            + webXmlFile.getCanonicalPath());
+                }
+                getLog().info( "web.xml file = " + resource);
+            }
+            else
+                getLog().info( "web.xml file = "
+                        + webXmlFile.getCanonicalPath());
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("web.xml does not exist", e);
+        }
+    }
 
 
 
@@ -352,10 +380,15 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
     {
        super.configureWebApplication();
         setClassPathFiles(setUpClassPath());
-        webAppConfig.setWebXmlFile(getWebXmlFile());
-        webAppConfig.setJettyEnvXmlFile(getJettyEnvXmlFile());
-        webAppConfig.setClassPathFiles(getClassPathFiles());
-        webAppConfig.setWar(getWebAppSourceDirectory().getCanonicalPath());
+        checkWebXml();
+        if(webAppConfig.getWebXmlFile()==null)
+            webAppConfig.setWebXmlFile(getWebXmlFile());
+        if(webAppConfig.getJettyEnvXmlFile()==null)
+            webAppConfig.setJettyEnvXmlFile(getJettyEnvXmlFile());
+        if(webAppConfig.getClassPathFiles()==null)
+            webAppConfig.setClassPathFiles(getClassPathFiles());
+        if(webAppConfig.getWar()==null)
+            webAppConfig.setWar(getWebAppSourceDirectory().getCanonicalPath());
         getLog().info("Webapp directory = " + getWebAppSourceDirectory().getCanonicalPath());
 
         webAppConfig.configure();
@@ -429,16 +462,93 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
     private List getDependencyFiles ()
     {
         List dependencyFiles = new ArrayList();
+        List overlays = new ArrayList();
         for ( Iterator iter = getProject().getArtifacts().iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();
             // Include runtime and compile time libraries, and possibly test libs too
+            if(artifact.getType().equals("war"))
+            {
+                try
+                {
+                    Resource r = Resource.newResource("jar:" + artifact.getFile().toURL().toString() + "!/");
+                    overlays.add(r);
+                    getExtraScanTargets().add(artifact.getFile());
+                }
+                catch(Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+                continue;
+            }
             if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope()))) 
                     ||
                 (useTestClasspath && Artifact.SCOPE_TEST.equals( artifact.getScope())))
             {
                 dependencyFiles.add(artifact.getFile());
                 getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );   
+            }
+        }
+        if(!overlays.isEmpty() && !isEqual(overlays, _overlays))
+        {
+            try
+            {
+                Resource resource = _overlays==null ? webAppConfig.getBaseResource() : null;
+                ResourceCollection rc = new ResourceCollection();
+                if(resource==null)
+                {
+                    // nothing configured, so we automagically enable the overlays                    
+                    int size = overlays.size()+1;
+                    Resource[] resources = new Resource[size];
+                    resources[0] = Resource.newResource(getWebAppSourceDirectory().toURL());
+                    for(int i=1; i<size; i++)
+                    {
+                        resources[i] = (Resource)overlays.get(i-1);
+                        getLog().info("Adding overlay: " + resources[i]);
+                    }
+                    rc.setResources(resources);
+                }                
+                else
+                {                    
+                    if(resource instanceof ResourceCollection)
+                    {
+                        // there was a preconfigured ResourceCollection ... append the artifact wars
+                        Resource[] old = ((ResourceCollection)resource).getResources();
+                        int size = old.length + overlays.size();
+                        Resource[] resources = new Resource[size];
+                        System.arraycopy(old, 0, resources, 0, old.length);
+                        for(int i=old.length,j=0; i<size; i++,j++)
+                        {
+                            resources[i] = (Resource)overlays.get(j);
+                            getLog().info("Adding overlay: " + resources[i]);
+                        }
+                        rc.setResources(resources);
+                    }
+                    else
+                    {
+                        // baseResource was already configured w/c could be src/main/webapp
+                        if(!resource.isDirectory() && String.valueOf(resource.getFile()).endsWith(".war"))
+                        {
+                            // its a war                            
+                            resource = Resource.newResource("jar:" + resource.getURL().toString() + "!/");
+                        }
+                        int size = overlays.size()+1;
+                        Resource[] resources = new Resource[size];
+                        resources[0] = resource;
+                        for(int i=1; i<size; i++)
+                        {
+                            resources[i] = (Resource)overlays.get(i-1);
+                            getLog().info("Adding overlay: " + resources[i]);
+                        }
+                        rc.setResources(resources);
+                    }
+                }
+                webAppConfig.setBaseResource(rc);
+                _overlays = overlays;
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
             }
         }
         return dependencyFiles; 
@@ -470,6 +580,19 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
             }
         }
         return classPathFiles;
+    }
+    
+    static boolean isEqual(List overlays1, List overlays2)
+    {
+        if(overlays2==null || overlays1.size()!=overlays2.size())
+            return false;
+        
+        for(int i=0; i<overlays1.size(); i++)
+        {
+            if(!overlays1.get(i).equals(overlays2.get(i)))
+                return false;
+        }
+        return true;
     }
 
 }

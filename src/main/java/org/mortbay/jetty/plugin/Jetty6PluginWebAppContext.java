@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6PluginWebAppContext.java 2100 2007-09-13 22:35:06Z janb $
+//$Id: Jetty6PluginWebAppContext.java 5511 2009-09-08 03:25:47Z janb $
 //Copyright 2006 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,7 @@ public class Jetty6PluginWebAppContext extends WebAppContext
     private JettyWebXmlConfiguration jettyWebConfig = new JettyWebXmlConfiguration();
     private TagLibConfiguration tagConfig = new TagLibConfiguration();
     private Configuration[] configs = new Configuration[]{webInfConfig,envConfig, mvnConfig, jettyWebConfig, tagConfig};
+    private String contextPath = null;
     
     public Jetty6PluginWebAppContext ()
     {
@@ -48,15 +49,34 @@ public class Jetty6PluginWebAppContext extends WebAppContext
         setConfigurations(configs);
     }
     
+    public void setContextPath(String path)
+    {
+        this.contextPath = path;
+    }
+    
+    public String getContextPath()
+    {
+        return contextPath;
+    }
+    
     public void setClassPathFiles(List classpathFiles)
     {
         this.classpathFiles = classpathFiles;
     }
 
+    public List getClassPathFiles()
+    {
+        return this.classpathFiles;
+    }
     
     public void setWebXmlFile(File webXmlFile)
     {
         this.webXmlFile = webXmlFile;
+    }
+    
+    public File getWebXmlFile()
+    {
+        return this.webXmlFile;
     }
     
     public void setJettyEnvXmlFile (File jettyEnvXmlFile)
@@ -64,8 +84,16 @@ public class Jetty6PluginWebAppContext extends WebAppContext
         this.jettyEnvXmlFile = jettyEnvXmlFile;
     }
     
+    public File getJettyEnvXmlFile()
+    {
+        return this.jettyEnvXmlFile;
+    }
+    
     public void configure ()
     {        
+        if (this.contextPath != null)
+            super.setContextPath(this.contextPath);
+        
         setConfigurations(configs);
         mvnConfig.setClassPathConfiguration (classpathFiles);
         mvnConfig.setWebXml (webXmlFile);  
@@ -78,29 +106,6 @@ public class Jetty6PluginWebAppContext extends WebAppContext
         {
             throw new RuntimeException(e);
         }
-        /*
-        Configuration[] configurations = getConfigurations();
-        for (int i=0;i<configurations.length; i++)
-        {
-            if (configurations[i] instanceof Jetty6MavenConfiguration)
-            {
-                ((Jetty6MavenConfiguration)configurations[i]).setClassPathConfiguration (classpathFiles);
-                ((Jetty6MavenConfiguration)configurations[i]).setWebXml (webXmlFile);              
-            }
-            else if (configurations[i] instanceof EnvConfiguration)
-            {
-                try
-                {
-                    if (this.jettyEnvXmlFile != null)
-                        ((EnvConfiguration)configurations[i]).setJettyEnvXml(this.jettyEnvXmlFile.toURL());
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        */
     }
 
 

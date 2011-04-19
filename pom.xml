@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jenkins-ci.tools</groupId>
   <artifactId>maven-jenkins-dev-plugin</artifactId>
-  <version>6.1.26-jenkins-1</version>
+  <version>6.1.26-jenkins-2</version>
 
   <packaging>maven-plugin</packaging>
   <name>Maven Jetty Plugin</name>

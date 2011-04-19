@@ -18,6 +18,7 @@ package org.mortbay.jetty.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -74,8 +75,15 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
      */
     private File classesDirectory;
     
-    
-    
+    /**
+     * More directories containing generated classes.
+     *
+     * @parameter
+     *
+     */
+    private File[] additionalClassesDirectories = new File[0];
+
+
     /**
      * The directory containing generated test classes.
      * 
@@ -568,6 +576,8 @@ public abstract class AbstractJettyRunMojo extends AbstractJettyMojo
         
         if (getClassesDirectory() != null)
             classPathFiles.add(getClassesDirectory());
+
+        classPathFiles.addAll(Arrays.asList(additionalClassesDirectories));
         
         //now add all of the dependencies
         classPathFiles.addAll(getDependencyFiles());

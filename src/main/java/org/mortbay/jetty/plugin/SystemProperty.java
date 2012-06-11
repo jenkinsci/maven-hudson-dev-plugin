@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: SystemProperty.java 3907 2008-10-28 00:39:40Z janb $
+//$Id$
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 //limitations under the License.
 //========================================================================
 
-package org.mortbay.jetty.plugin.util;
+package org.mortbay.jetty.plugin;
 
 /**
  * SystemProperty

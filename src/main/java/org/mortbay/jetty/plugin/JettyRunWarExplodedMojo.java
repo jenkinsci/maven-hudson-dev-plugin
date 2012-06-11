@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: Jetty6RunWar.java 3591 2008-09-03 21:31:12Z jesse $
+//$Id$
 //Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,85 +21,79 @@ import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.mortbay.util.Scanner;
+import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
- * <p>
- *  This goal is used to assemble your webapp into a war and automatically deploy it to Jetty.
+ * 
+ *  <p>
+ *  This goal is used to assemble your webapp into an exploded war and automatically deploy it to Jetty.
  *  </p>
  *  <p>
- *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and to the
- *  war file and automatically performing a 
- *  hot redeploy when necessary. 
+ *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the pom.xml and 
+ *  to WEB-INF/web.xml, WEB-INF/classes or WEB-INF/lib and hot redeploy when a change is detected. 
  *  </p>
  *  <p>
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
  *  </p>
  *  <p>
- *  There is a <a href="run-war-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
- *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin/">Configuration Guide</a>.
+ *  There is a <a href="run-exploded-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
+ *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin">Configuration Guide</a>.
  *  </p>
- * 
- * @goal run-war
- * @requiresDependencyResolution runtime
- * @execute phase="package"
- * @description Runs jetty6 on a war file
  *
+ *@goal run-exploded
+ *@requiresDependencyResolution compile+runtime
+ *@execute phase=package
  */
-public class Jetty6RunWar extends AbstractJetty6Mojo
+public class JettyRunWarExplodedMojo extends AbstractJettyMojo
 {
 
-    /**
-     * The location of the war file.
-     * @parameter expression="${project.build.directory}/${project.build.finalName}.war"
-     * @required
-     */
-    private File webApp;
-
-
+    
     
     /**
-     * @see org.apache.maven.plugin.Mojo#execute()
+     * The location of the war file.
+     * 
+     * @parameter alias="webApp" expression="${project.build.directory}/${project.build.finalName}"
+     * @required
      */
-    public void execute() throws MojoExecutionException, MojoFailureException
-    {
-        super.execute();  
-    }
+    private File war;
 
-
-
-    public void configureWebApplication () throws Exception
-    {
-        super.configureWebApplication();
-        
-        webAppConfig.setWar(webApp.getCanonicalPath());
-        webAppConfig.configure();
-    }
- 
-
+    
+   
+  
+   
 
     /**
+     * 
      * @see org.mortbay.jetty.plugin.AbstractJettyMojo#checkPomConfiguration()
      */
     public void checkPomConfiguration() throws MojoExecutionException
     {
-       return;        
+        return;
     }
 
-
-
-    /* (non-Javadoc)
-     * @see org.mortbay.jetty.plugin.util.AbstractJettyMojo#configureScanner()
+    /**
+     * @see org.mortbay.jetty.plugin.AbstractJettyMojo#configureScanner()
      */
     public void configureScanner() throws MojoExecutionException
     {
-        final ArrayList scanList = new ArrayList();
+        final ArrayList<File> scanList = new ArrayList<File>();
         scanList.add(getProject().getFile());
-        scanList.add(webApp);
+        File webInfDir = new File(war,"WEB-INF");
+        scanList.add(new File(webInfDir, "web.xml"));
+        File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
+        if (jettyWebXmlFile != null)
+            scanList.add(jettyWebXmlFile);
+        File jettyEnvXmlFile = new File(webInfDir, "jetty-env.xml");
+        if (jettyEnvXmlFile.exists())
+            scanList.add(jettyEnvXmlFile);
+        scanList.add(new File(webInfDir, "classes"));
+        scanList.add(new File(webInfDir, "lib"));
         setScanList(scanList);
         
-        ArrayList listeners = new ArrayList();
+        ArrayList<Scanner.BulkListener> listeners = new ArrayList<Scanner.BulkListener>();
         listeners.add(new Scanner.BulkListener()
         {
             public void filesChanged(List changes)
@@ -116,17 +110,16 @@ public class Jetty6RunWar extends AbstractJetty6Mojo
             }
         });
         setScannerListeners(listeners);
-        
     }
 
     
     
-
+    
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
-        getLog().info("Restarting webapp ...");
+        getLog().info("Restarting webapp");
         getLog().debug("Stopping webapp ...");
-        webAppConfig.stop();
+        webApp.stop();
         getLog().debug("Reconfiguring webapp ...");
 
         checkPomConfiguration();
@@ -136,29 +129,42 @@ public class Jetty6RunWar extends AbstractJetty6Mojo
         if (reconfigureScanner)
         {
             getLog().info("Reconfiguring scanner after change to pom.xml ...");
-            ArrayList scanList = getScanList();
+            ArrayList<File> scanList = getScanList();
             scanList.clear();
             scanList.add(getProject().getFile());
-            scanList.add(webApp);
+            File webInfDir = new File(war,"WEB-INF");
+            scanList.add(new File(webInfDir, "web.xml"));
+            File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
+            if (jettyWebXmlFile != null)
+                scanList.add(jettyWebXmlFile);
+            File jettyEnvXmlFile = new File(webInfDir, "jetty-env.xml");
+            if (jettyEnvXmlFile.exists())
+                scanList.add(jettyEnvXmlFile);
+            scanList.add(new File(webInfDir, "classes"));
+            scanList.add(new File(webInfDir, "lib"));
             setScanList(scanList);
             getScanner().setScanDirs(scanList);
         }
 
         getLog().debug("Restarting webapp ...");
-        webAppConfig.start();
+        webApp.start();
         getLog().info("Restart completed.");
     }
 
-
-    /**
-     * @see org.mortbay.jetty.plugin.AbstractJettyMojo#finishConfigurationBeforeStart()
-     */
-    public void finishConfigurationBeforeStart()
+   
+    
+    public void configureWebApplication () throws Exception
     {
-        return;
+        super.configureWebApplication();        
+        webApp.setWar(war.getCanonicalPath());
     }
     
-   
+    public void execute () throws MojoExecutionException, MojoFailureException
+    {
+        super.execute();
+    }
 
     
+  
+  
 }

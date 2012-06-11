@@ -1,6 +1,6 @@
 //========================================================================
-//$Id: Proxy.java 215 2006-02-15 09:43:07Z janb $
-//Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
+//$Id$
+//Copyright 2000-2005 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -13,17 +13,29 @@
 //limitations under the License.
 //========================================================================
 
-package org.mortbay.jetty.plugin.util;
+package org.mortbay.jetty.plugin;
+
+import org.apache.maven.plugin.logging.Log;
 
 /**
- * Proxy
+ * PluginLog
  * 
- * Provides untyped access to an object of
- * a particular jetty version.
+ * Convenience class to provide access to the plugin
+ * Log for non-mojo classes.
  *
  */
-public interface Proxy {
+public class PluginLog
+{
+    private static Log log = null;
     
-    public Object getProxiedObject();
+    public static void setLog(Log l)
+    {
+        log = l;
+    }
+    
+    public static Log getLog()
+    {
+        return log;
+    }
 
 }

@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: ScanTargetPattern.java 1888 2007-05-31 08:57:33Z janb $
+//$Id$
 //Copyright 2006 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 //limitations under the License.
 //========================================================================
 
-package org.mortbay.jetty.plugin.util;
+package org.mortbay.jetty.plugin;
 
 import java.io.File;
 import java.util.Collections;
@@ -55,7 +55,7 @@ public class ScanTargetPattern
     }
 
     /**
-     * @param _directory the _directory to set
+     * @param directory the directory to set
      */
     public void setDirectory(File directory)
     {

@@ -1,6 +1,6 @@
 //========================================================================
-//$Id: JettyStopMojo.java 5222 2009-05-29 07:34:32Z dyu $
-//Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
+//$Id$
+//Copyright 2000-2009 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
@@ -29,8 +29,6 @@ import org.apache.maven.plugin.MojoFailureException;
  * The ff are required:
  * -DstopKey=someKey
  * -DstopPort=somePort
- * 
- * @author David Yu
  * 
  * @goal stop
  * @description Stops jetty that is configured with &lt;stopKey&gt; and &lt;stopPort&gt;.
@@ -81,4 +79,19 @@ public class JettyStopMojo extends AbstractMojo
         }
     }
 
+    public int getStopPort() {
+        return stopPort;
+    }
+
+    public void setStopPort(int stopPort) {
+        this.stopPort = stopPort;
+    }
+
+    public String getStopKey() {
+        return stopKey;
+    }
+
+    public void setStopKey(String stopKey) {
+        this.stopKey = stopKey;
+    }
 }

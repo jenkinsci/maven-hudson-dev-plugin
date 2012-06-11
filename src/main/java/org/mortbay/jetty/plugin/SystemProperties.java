@@ -1,5 +1,5 @@
 //========================================================================
-//$Id: SystemProperties.java 4440 2009-02-09 07:49:11Z ayao $
+//$Id$
 //Copyright 2008 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 //limitations under the License.
 //========================================================================
 
-package org.mortbay.jetty.plugin.util;
+package org.mortbay.jetty.plugin;
 
 import java.util.ArrayList;
 import java.util.HashMap;

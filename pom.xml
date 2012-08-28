@@ -10,7 +10,7 @@
   <version>8.1.4.v20120524-jenkins-2-SNAPSHOT</version>
 
   <packaging>maven-plugin</packaging>
-  <name>Jetty :: Jetty Maven Plugin</name>
+  <name>Maven Jenkins Dev Plugin (Jetty)</name>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
     <pluginToolsVersion>2.9</pluginToolsVersion>

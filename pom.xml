@@ -44,9 +44,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <goalPrefix>hudson-dev</goalPrefix>
-        </configuration>
       </plugin>
       <!-- not sure what these sites do but we don't have that site-component.xml
       <plugin>

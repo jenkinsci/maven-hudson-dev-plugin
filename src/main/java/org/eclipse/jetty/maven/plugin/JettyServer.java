@@ -1,31 +1,40 @@
-//========================================================================
-//$Id$
-//Copyright 2000-2004 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//Licensed under the Apache License, Version 2.0 (the "License");
-//you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at 
-//http://www.apache.org/licenses/LICENSE-2.0
-//Unless required by applicable law or agreed to in writing, software
-//distributed under the License is distributed on an "AS IS" BASIS,
-//WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//See the License for the specific language governing permissions and
-//limitations under the License.
-//========================================================================
+//
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-package org.mortbay.jetty.plugin;
+package org.eclipse.jetty.maven.plugin;
 
 
-import org.eclipse.jetty.server.Connector;
+import java.io.File;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlConfiguration;
+
 
 /**
  * JettyServer
@@ -34,19 +43,18 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * 
  */
 public class JettyServer extends org.eclipse.jetty.server.Server
-{
-    public static int DEFAULT_PORT = 8080;
-    public static int DEFAULT_MAX_IDLE_TIME = 30000;
-  
-
+{ 
     private RequestLog requestLog;
     private ContextHandlerCollection contexts;
     
     
+    
+    /**
+     * 
+     */
     public JettyServer()
     {
         super();
-        setStopAtShutdown(true);
         //make sure Jetty does not use URLConnection caches with the plugin
         Resource.setDefaultUseCaches(false);
     }
@@ -106,20 +114,43 @@ public class JettyServer extends org.eclipse.jetty.server.Server
             }
         }  
     }
-    
-    
-    
-    
-    public Connector createDefaultConnector(String portnum) throws Exception
+
+    /**
+     * Apply xml files to server startup, passing in ourselves as the 
+     * "Server" instance.
+     * 
+     * @param files
+     * @throws Exception
+     */
+    public  void applyXmlConfigurations (List<File> files) 
+    throws Exception
     {
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector = new SelectChannelConnector();
-        int port = ((portnum==null||portnum.equals(""))?DEFAULT_PORT:Integer.parseInt(portnum.trim()));
-        connector.setPort(port);
-        connector.setMaxIdleTime(DEFAULT_MAX_IDLE_TIME);
-        
-        return connector;
+        if (files == null || files.isEmpty())
+            return;
+
+       Map<String,Object> lastMap = Collections.singletonMap("Server", (Object)this);
+
+        for ( File xmlFile : files )
+        {
+            if (PluginLog.getLog() != null)
+                PluginLog.getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );   
+
+
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
+
+            //chain ids from one config file to another
+            if (lastMap != null)
+                xmlConfiguration.getIdMap().putAll(lastMap); 
+
+            //Set the system properties each time in case the config file set a new one
+            Enumeration<?> ensysprop = System.getProperties().propertyNames();
+            while (ensysprop.hasMoreElements())
+            {
+                String name = (String)ensysprop.nextElement();
+                xmlConfiguration.getProperties().put(name,System.getProperty(name));
+            }
+            xmlConfiguration.configure(); 
+            lastMap = xmlConfiguration.getIdMap();
+        }
     }
-    
- 
 }

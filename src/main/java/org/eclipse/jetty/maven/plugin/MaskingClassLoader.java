@@ -1,4 +1,4 @@
-package org.mortbay.jetty.plugin;
+package org.eclipse.jetty.maven.plugin;
 
 import java.net.URL;
 import java.util.Enumeration;

@@ -18,6 +18,16 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <configuration>
+          <!--
+              our version number having '-' in it violates org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule
+              that's defined in the parent POM.
+          -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>true</skip>

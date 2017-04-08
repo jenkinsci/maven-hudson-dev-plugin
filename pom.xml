@@ -2,12 +2,12 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.15.v20160210</version>
+    <version>9.3.17.v20170317</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jenkins-ci.tools</groupId>
   <artifactId>maven-jenkins-dev-plugin</artifactId>
-  <version>9.2.16.v20160210-jenkins-1-SNAPSHOT</version>
+  <version>9.3.17.v20170317-jenkins-1-SNAPSHOT</version>
 
   <packaging>maven-plugin</packaging>
   <name>Maven Jenkins Dev Plugin (Jetty)</name>

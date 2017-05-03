@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
 /**
  * 
@@ -52,7 +52,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     /**
      * The location of the war file.
      * 
-     * @parameter expression="${project.build.directory}/${project.build.finalName}"
+     * @parameter default-value="${project.build.directory}/${project.build.finalName}"
      * @required
      */
     private File war;
@@ -96,27 +96,51 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
      */
     public void configureScanner() throws MojoExecutionException
     {
-        scanList = new ArrayList<File>();
-        scanList.add(project.getFile());
+        scanner.watch(project.getFile().toPath());
         File webInfDir = new File(war,"WEB-INF");
-        scanList.add(new File(webInfDir, "web.xml"));
+        File webXml = new File(webInfDir, "web.xml");
+        if (webXml.exists())
+            scanner.watch(webXml.toPath());
         File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
         if (jettyWebXmlFile != null)
-            scanList.add(jettyWebXmlFile);
+            scanner.watch(jettyWebXmlFile.toPath());
         File jettyEnvXmlFile = new File(webInfDir, "jetty-env.xml");
         if (jettyEnvXmlFile.exists())
-            scanList.add(jettyEnvXmlFile);
-        scanList.add(new File(webInfDir, "classes"));
-        scanList.add(new File(webInfDir, "lib"));
+            scanner.watch(jettyEnvXmlFile.toPath());
 
-        scannerListeners = new ArrayList<Scanner.BulkListener>();
-        scannerListeners.add(new Scanner.BulkListener()
+        File classes = new File(webInfDir, "classes");
+        if (classes.exists())
         {
-            public void filesChanged(List changes)
+            PathWatcher.Config classesConfig = new PathWatcher.Config(classes.toPath());
+            classesConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            scanner.watch(classesConfig);
+        }
+
+        File lib = new File(webInfDir, "lib");
+        if (lib.exists())
+        {
+            PathWatcher.Config libConfig = new PathWatcher.Config(lib.toPath());
+            libConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            scanner.watch(libConfig);   
+        }
+
+        scanner.addListener(new PathWatcher.EventListListener()
+        {
+
+            @Override
+            public void onPathWatchEvents(List<PathWatchEvent> events)
             {
                 try
                 {
-                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
+                    boolean reconfigure = false;
+                    for (PathWatchEvent e:events)
+                    {
+                        if (e.getPath().equals(project.getFile().toPath()))
+                        {
+                            reconfigure = true;
+                            break;
+                        }
+                    }
                     restartWebApp(reconfigure);
                 }
                 catch (Exception e)
@@ -137,6 +161,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     {
         getLog().info("Restarting webapp");
         getLog().debug("Stopping webapp ...");
+        stopScanner();
         webApp.stop();
         getLog().debug("Reconfiguring webapp ...");
 
@@ -147,23 +172,13 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         if (reconfigureScanner)
         {
             getLog().info("Reconfiguring scanner after change to pom.xml ...");
-            scanList.clear();
-            scanList.add(project.getFile());
-            File webInfDir = new File(war,"WEB-INF");
-            scanList.add(new File(webInfDir, "web.xml"));
-            File jettyWebXmlFile = findJettyWebXmlFile(webInfDir);
-            if (jettyWebXmlFile != null)
-                scanList.add(jettyWebXmlFile);
-            File jettyEnvXmlFile = new File(webInfDir, "jetty-env.xml");
-            if (jettyEnvXmlFile.exists())
-                scanList.add(jettyEnvXmlFile);
-            scanList.add(new File(webInfDir, "classes"));
-            scanList.add(new File(webInfDir, "lib"));
-            scanner.setScanDirs(scanList);
+            scanner.reset();
+            configureScanner();
         }
 
         getLog().debug("Restarting webapp ...");
         webApp.start();
+        startScanner();
         getLog().info("Restart completed.");
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,8 +40,7 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
  * MavenWebInfConfiguration
  * 
  * WebInfConfiguration to take account of overlaid wars expressed as project dependencies and
- * potentiall configured via the maven-war-plugin.
- *
+ * potential configured via the maven-war-plugin.
  */
 public class MavenWebInfConfiguration extends WebInfConfiguration
 {
@@ -51,9 +50,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected static int COUNTER = 0; 
     protected Resource _originalResourceBase;
     protected List<Resource>  _unpackedOverlayResources;
-  
-    
-    
     
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
@@ -192,7 +188,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
      * Get the jars to examine from the files from which we have
      * synthesized the classpath. Note that the classpath is not
      * set at this point, so we cannot get them from the classpath.
-     * @param context
+     * @param context the web app context
      * @return the list of jars found
      */
     @Override

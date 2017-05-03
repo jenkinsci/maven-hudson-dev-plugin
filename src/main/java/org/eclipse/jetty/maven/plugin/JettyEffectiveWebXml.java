@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,18 +42,19 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     /**
      * The target directory
      * 
-     * @parameter expression="${project.build.directory}"
+     * @parameter default-value="${project.build.directory}"
      * @required
      * @readonly
      */
     protected File target;
     
     /**
-     * The target directory
+     * The name of the file to generate into
      * 
      * @parameter 
      */
     protected File effectiveWebXml;
+    
     
     
     protected boolean deleteOnExit = true;
@@ -73,16 +74,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     {
         //Only do enough setup to be able to produce a quickstart-web.xml file 
         
-        //if the user didn't nominate a file to generate into, pick the name and
-        //make sure that it is deleted on exit
-        if (effectiveWebXml == null)
-        {
-            deleteOnExit = true;
-            effectiveWebXml = new File(target, "effective-web.xml");
-            effectiveWebXml.deleteOnExit();
-        }
-        
-        Resource descriptor = Resource.newResource(effectiveWebXml);
+
         
         QueuedThreadPool tpool = null;
         
@@ -93,27 +85,41 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             //apply any config from a jetty.xml file first to our "fake" server instance
             //TODO probably not necessary
             applyJettyXml ();  
-
         
-            server.configureHandlers();
+            ServerSupport.configureHandlers(server, null);
+            ServerSupport.configureDefaultConfigurationClasses(server);
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
-            
             
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
-    
-            if (!effectiveWebXml.getParentFile().exists())
-                effectiveWebXml.getParentFile().mkdirs();
-            if (!effectiveWebXml.exists())
-                effectiveWebXml.createNewFile();
+
+
+            //if the user didn't nominate a file to generate into, pick the name and
+            //make sure that it is deleted on exit
+            if (webApp.getQuickStartWebDescriptor() == null)
+            {
+                if (effectiveWebXml == null)
+                {
+                    deleteOnExit = true;
+                    effectiveWebXml = new File(target, "effective-web.xml");
+                    effectiveWebXml.deleteOnExit();
+                }
+
+                Resource descriptor = Resource.newResource(effectiveWebXml);
+
+                if (!effectiveWebXml.getParentFile().exists())
+                    effectiveWebXml.getParentFile().mkdirs();
+                if (!effectiveWebXml.exists())
+                    effectiveWebXml.createNewFile();
+
+                webApp.setQuickStartWebDescriptor(descriptor);
+            }
             
-            webApp.setQuickStartWebDescriptor(descriptor);
-            
-            server.addWebApplication(webApp);
+            ServerSupport.addWebApplication(server, webApp);
                        
             //if our server has a thread pool associated we can do any annotation scanning multithreaded,
             //otherwise scanning will be single threaded
@@ -143,7 +149,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             try
             {
                 //just show the result in the log
-                getLog().info(IO.toString(descriptor.getInputStream()));
+                getLog().info(IO.toString(webApp.getQuickStartWebDescriptor().getInputStream()));
             }
             catch (IOException e)
             {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -71,23 +72,25 @@ public class JettyWebAppContext extends WebAppContext
     private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
+    
+    
+    public  static final String[] DEFAULT_CONFIGURATION_CLASSES = {
+                                                           "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
+                                                           "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                           "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                                                           "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                           "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                                                           "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                                                           "org.eclipse.jetty.annotations.AnnotationConfiguration",
+                                                           "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+                                                           };
 
-    private final Configuration[] _defaultConfigurations = {
-                                                             new MavenWebInfConfiguration(),
-                                                             new WebXmlConfiguration(),
-                                                             new MetaInfConfiguration(),
-                                                             new FragmentConfiguration(),
-                                                             new EnvConfiguration(),
-                                                             new PlusConfiguration(),
-                                                             new AnnotationConfiguration(),
-                                                             new JettyWebXmlConfiguration()
-                                                            };
 
-    private final Configuration[] _quickStartConfigurations = {
-                                                                new MavenQuickStartConfiguration(),
-                                                                new EnvConfiguration(),
-                                                                new PlusConfiguration(),
-                                                                new JettyWebXmlConfiguration()
+    private final String[] QUICKSTART_CONFIGURATION_CLASSES = {
+                                                                "org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration",
+                                                                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                                                                "org.eclipse.jetty.plus.webapp.PlusConfiguration",
+                                                                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
                                                                };
 
     private File _classes = null;
@@ -99,6 +102,9 @@ public class JettyWebAppContext extends WebAppContext
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
+    private String _originAttribute;
+    private boolean _generateOrigin;
+   
     
  
     
@@ -130,7 +136,7 @@ public class JettyWebAppContext extends WebAppContext
    
 
   
-
+    /* ------------------------------------------------------------ */
     public JettyWebAppContext ()
     throws Exception
     {
@@ -138,81 +144,124 @@ public class JettyWebAppContext extends WebAppContext
         // Turn off copyWebInf option as it is not applicable for plugin.
         super.setCopyWebInf(false);
     }
+    
+    /* ------------------------------------------------------------ */
     public void setContainerIncludeJarPattern(String pattern)
     {
         _containerIncludeJarPattern = pattern;
     }
     
+    /* ------------------------------------------------------------ */
     public String getContainerIncludeJarPattern()
     {
         return _containerIncludeJarPattern;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public String getWebInfIncludeJarPattern()
     {
         return _webInfIncludeJarPattern;
     }
+    
+    /* ------------------------------------------------------------ */
     public void setWebInfIncludeJarPattern(String pattern)
     {
         _webInfIncludeJarPattern = pattern;
     }
    
-   
+    /* ------------------------------------------------------------ */
     public List<File> getClassPathFiles()
     {
         return this._classpathFiles;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public void setJettyEnvXml (String jettyEnvXml)
     {
         this._jettyEnvXml = jettyEnvXml;
     }
     
+    /* ------------------------------------------------------------ */
     public String getJettyEnvXml()
     {
         return this._jettyEnvXml;
     }
 
-   
+    /* ------------------------------------------------------------ */
     public void setClasses(File dir)
     {
         _classes = dir;
     }
     
+    /* ------------------------------------------------------------ */
     public File getClasses()
     {
         return _classes;
     }
     
+    /* ------------------------------------------------------------ */
     public void setWebInfLib (List<File> jars)
     {
         _webInfJars.addAll(jars);
     }
     
-    
+    /* ------------------------------------------------------------ */
     public void setTestClasses (File dir)
     {
         _testClasses = dir;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public File getTestClasses ()
     {
         return _testClasses;
     }
     
+    
+    /* ------------------------------------------------------------ */
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
-     * @param overlays
+     * @param overlays the list of overlays
      */
     public void setOverlays (List<Overlay> overlays)
     {
         _overlays = overlays;
     }
     
+    /**
+     * @return the originAttribute
+     */
+    public String getOriginAttribute()
+    {
+        return _originAttribute;
+    }
+
+    /**
+     * @param originAttribute the originAttribute to set
+     */
+    public void setOriginAttribute(String originAttribute)
+    {
+        _originAttribute = originAttribute;
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
+    {
+        return _generateOrigin;
+    }
+
+    /**
+     * @param generateOrigin the generateOrigin to set
+     */
+    public void setGenerateOrigin(boolean generateOrigin)
+    {
+        _generateOrigin = generateOrigin;
+    }
+
+    /* ------------------------------------------------------------ */
     public List<Overlay> getOverlays()
     {
         return _overlays;
@@ -231,7 +280,13 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     /* ------------------------------------------------------------ */
-    public void setQuickStartWebDescriptor (Resource quickStartWebXml)
+    public void setQuickStartWebDescriptor (String quickStartWebXml) throws Exception
+    {
+        setQuickStartWebDescriptor(Resource.newResource(quickStartWebXml));
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void setQuickStartWebDescriptor (Resource quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
@@ -260,17 +315,20 @@ public class JettyWebAppContext extends WebAppContext
         
         setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
-
+    
+    /* ------------------------------------------------------------ */
     public List<File> getWebInfLib()
     {
         return _webInfJars;
     }
     
+    /* ------------------------------------------------------------ */
     public void setGenerateQuickStart (boolean quickStart)
     {
         _isGenerateQuickStart = quickStart;
     }
     
+    /* ------------------------------------------------------------ */
     public boolean isGenerateQuickStart()
     {
         return _isGenerateQuickStart;
@@ -278,7 +336,7 @@ public class JettyWebAppContext extends WebAppContext
     
    
     
-    
+    /* ------------------------------------------------------------ */
     @Override
     protected void startWebapp() throws Exception
     {
@@ -287,41 +345,46 @@ public class JettyWebAppContext extends WebAppContext
             if (getQuickStartWebDescriptor() == null)
                 throw new IllegalStateException ("No location to generate quickstart descriptor");
 
-            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML());
+            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML(), _originAttribute, _generateOrigin);
             try (FileOutputStream fos = new FileOutputStream(getQuickStartWebDescriptor().getFile()))
             {
                 generator.generateQuickStartWebXml(fos);
             }
         }
         else
+        {
+            if (LOG.isDebugEnabled()) { LOG.debug("Calling full start on webapp");}
             super.startWebapp();
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void stopWebapp() throws Exception
+    {
+        if (isGenerateQuickStart())
+            return;
 
+        if (LOG.isDebugEnabled()) { LOG.debug("Calling stop of fully started webapp");}
+        super.stopWebapp();
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void doStart () throws Exception
     {
         //choose if this will be a quickstart or normal start
         if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
-            setConfigurations(_quickStartConfigurations);
-        else
         {
-            setConfigurations(_defaultConfigurations);
+            setConfigurationClasses(QUICKSTART_CONFIGURATION_CLASSES);
+        }
+        else
+        { 
             if (isGenerateQuickStart())
             {
                 _preconfigProcessor = new PreconfigureDescriptorProcessor();
                 getMetaData().addDescriptorProcessor(_preconfigProcessor);
             }
-        }
-        
-
-        //inject configurations with config from maven plugin    
-        for (Configuration c:getConfigurations())
-        {
-            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
         }
 
         //Set up the pattern that tells us where the jars are that need scanning
@@ -362,10 +425,31 @@ public class JettyWebAppContext extends WebAppContext
                 _webInfJarMap.put(fileName, file);
         }
         
+        //check for CDI
+        initCDI();
+        
         // CHECK setShutdown(false);
         super.doStart();
     }
-     
+    
+    
+    @Override
+    protected void loadConfigurations() throws Exception
+    {
+        super.loadConfigurations();
+        
+        //inject configurations with config from maven plugin    
+        for (Configuration c:getConfigurations())
+        {
+            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
+                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+        }
+    }
+
+
+    /* ------------------------------------------------------------ */
     public void doStop () throws Exception
     { 
         if (_classpathFiles != null)
@@ -386,8 +470,9 @@ public class JettyWebAppContext extends WebAppContext
         // CHECK setShutdown(true);
         //just wait a little while to ensure no requests are still being processed
         Thread.currentThread().sleep(500L);
+
         super.doStop();
-        
+
         //remove all listeners, servlets and filters. This is because we will re-apply
         //any context xml file, which means they would potentially be added multiple times.
         setEventListeners(new EventListener[0]);
@@ -396,7 +481,9 @@ public class JettyWebAppContext extends WebAppContext
         getServletHandler().setServlets(new ServletHolder[0]);
         getServletHandler().setServletMappings(new ServletMapping[0]);
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
     public Resource getResource(String uriInContext) throws MalformedURLException
     {
@@ -470,7 +557,9 @@ public class JettyWebAppContext extends WebAppContext
         }
         return resource;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
     public Set<String> getResourcePaths(String path)
     {
@@ -507,7 +596,7 @@ public class JettyWebAppContext extends WebAppContext
         return paths;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public String addPattern (String s, String pattern)
     {
         if (s == null)
@@ -523,5 +612,30 @@ public class JettyWebAppContext extends WebAppContext
         }
         
         return s;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public void initCDI()
+    {
+        Class cdiInitializer = null;
+        try
+        {
+            cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.cdi.servlet.JettyWeldInitializer");
+            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
+            initWebAppMethod.invoke(null, new Object[]{this});
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.debug("o.e.j.cdi.servlet.JettyWeldInitializer not found, no cdi integration available");
+        }
+        catch (NoSuchMethodException e)
+        {
+            LOG.warn("o.e.j.cdi.servlet.JettyWeldInitializer.initWebApp() not found, no cdi integration available");
+        }
+        catch (Exception e)
+        {
+           LOG.warn("Problem initializing cdi", e);
+        }
     }
 }

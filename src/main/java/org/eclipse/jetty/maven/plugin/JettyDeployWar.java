@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.maven.plugin;
-
-import java.io.File;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -74,8 +72,7 @@ public class JettyDeployWar extends JettyRunWarMojo
     {
         super.finishConfigurationBeforeStart();
         //only stop the server at shutdown if we are blocking
-        server.setStopAtShutdown(!nonblocking);
-       
+        server.setStopAtShutdown(!nonblocking); 
     }
 
 }

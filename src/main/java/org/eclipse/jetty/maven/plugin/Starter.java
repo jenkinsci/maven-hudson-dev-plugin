@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,8 +31,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.StringUtil;
@@ -45,20 +45,16 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
- * Starter
- * 
- * Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
- *
+ * Starter Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
  */
 public class Starter
 { 
-    public static final String PORT_SYSPROPERTY = "jetty.port";
     private static final Logger LOG = Log.getLogger(Starter.class);
 
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
     private File contextXml; //name of context xml file to configure the webapp - Mandatory
 
-    private JettyServer server = new JettyServer();
+    private Server server;
     private JettyWebAppContext webApp;
 
     
@@ -116,41 +112,23 @@ public class Starter
     
     
     
-    /**
-     * @throws Exception
-     */
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
-
+        Resource.setDefaultUseCaches(false);
+        
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
 
-        // if the user hasn't configured a connector in the jetty.xml
-        //then use a default
-        Connector[] connectors = this.server.getConnectors();
-        if (connectors == null|| connectors.length == 0)
-        {
-            //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            MavenServerConnector httpConnector = new MavenServerConnector();
-            httpConnector.setServer(this.server);
-            String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
-            httpConnector.setPort(Integer.parseInt(tmp.trim()));
-            connectors = new Connector[] {httpConnector};
-            this.server.setConnectors(connectors);
-        }
-
-        //check that everything got configured, and if not, make the handlers
-        HandlerCollection handlers = (HandlerCollection) server.getChildHandlerByClass(HandlerCollection.class);
-        if (handlers == null)
-        {
-            handlers = new HandlerCollection();
-            server.setHandler(handlers);
-        }
+        //ensure there's a connector
+        ServerSupport.configureConnectors(server, null);
 
         //check if contexts already configured, create if not
-        this.server.configureHandlers();
-
+        ServerSupport.configureHandlers(server, null);
+        
+        //Set up list of default Configurations to apply to a webapp
+        ServerSupport.configureDefaultConfigurationClasses(server);
+        
         webApp = new JettyWebAppContext();
         
         //configure webapp from properties file describing unassembled webapp
@@ -177,7 +155,7 @@ public class Starter
             xmlConfiguration.configure(webApp);
         }
 
-        this.server.addWebApplication(webApp);
+        ServerSupport.addWebApplication(server, webApp);
 
         if(stopPort>0 && stopKey!=null)
         {
@@ -188,10 +166,6 @@ public class Starter
         }
     }
     
-    
-    /**
-     * @throws Exception
-     */
     public void configureWebApp ()
     throws Exception
     {
@@ -340,10 +314,6 @@ public class Starter
         
     }
 
-    /**
-     * @param args
-     * @throws Exception
-     */
     public void getConfiguration (String[] args)
     throws Exception
     {
@@ -394,9 +364,6 @@ public class Starter
     }
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         LOG.info("Started Jetty Server");
@@ -404,18 +371,12 @@ public class Starter
     }
 
     
-    /**
-     * @throws Exception
-     */
     public void join () throws Exception
     {
         server.join();
     }
     
     
-    /**
-     * @param e
-     */
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -430,22 +391,21 @@ public class Starter
     
     /**
      * Apply any jetty xml files given
-     * @throws Exception
+     * @throws Exception if unable to apply the xml
      */
     public void applyJettyXml() throws Exception
     {
-        if (jettyXmls == null)
-            return;
-        this.server.applyXmlConfigurations(jettyXmls);
+        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmls);
+        if (server == null)
+            server = tmp;
+        
+        if (server == null)
+            server = new Server();
     }
 
 
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -460,11 +420,6 @@ public class Starter
     
     
     
-    /**
-     * @param c
-     * @param wars
-     * @return
-     */
     protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
     {
         if (wars == null || wars.isEmpty() || c == null)
@@ -499,11 +454,6 @@ public class Starter
         return list;
     }
     
-    
-    
-    /**
-     * @param args
-     */
     public static final void main(String[] args)
     {
         if (args == null)

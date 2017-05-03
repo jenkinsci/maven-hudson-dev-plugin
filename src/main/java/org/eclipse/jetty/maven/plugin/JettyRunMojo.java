@@ -108,7 +108,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @parameter
      */
     protected ScanPattern scanClassesPattern;
-    
+
     /**
      * The directory containing generated test classes.
      * 

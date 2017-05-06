@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,8 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * OverlayConfig
- *
- *
  */
 public class OverlayConfig
 {
@@ -271,7 +269,7 @@ public class OverlayConfig
      * @param gid Artifact groupId
      * @param aid Artifact artifactId
      * @param cls Artifact classifier
-     * @return
+     * @return true if matched
      */
     public boolean matchesArtifact (String gid, String aid, String cls)
     {
@@ -286,9 +284,9 @@ public class OverlayConfig
     /**
      * Check if this overlay configuration matches an Artifact's info
      * 
-     * @param gid
-     * @param aid
-     * @return
+     * @param gid the group id
+     * @param aid the artifact id
+     * @return true if matched
      */
     public boolean matchesArtifact (String gid, String aid)
     {
@@ -298,9 +296,6 @@ public class OverlayConfig
 
         return false;
     }
-    
-    
-    
     
     public String toString()
     {

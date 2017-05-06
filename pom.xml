@@ -2,18 +2,19 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.15.v20160210</version>
+    <version>9.4.5.v20170502</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jenkins-ci.tools</groupId>
   <artifactId>maven-jenkins-dev-plugin</artifactId>
-  <version>9.2.16.v20160210-jenkins-1-SNAPSHOT</version>
+  <version>9.4.5.v20170502-jenkins-1-SNAPSHOT</version>
 
   <packaging>maven-plugin</packaging>
   <name>Maven Jenkins Dev Plugin (Jetty)</name>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.1</pluginToolsVersion>
+    <pluginToolsVersion>3.5</pluginToolsVersion>
+    <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
@@ -39,10 +40,8 @@
         <version>${pluginToolsVersion}</version>
         <executions>
           <execution>
-            <id>exec-plugin-doc</id>
-            <phase>generate-sources</phase>
+            <id>generate-helpmojo</id>
             <goals>
-              <goal>xdoc</goal>
               <goal>helpmojo</goal>
             </goals>
           </execution>
@@ -186,33 +185,7 @@
        <scope>compile</scope>
      </dependency>
   </dependencies>
-  <!--
-  <reporting>
-  <plugins>
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-project-info-reports-plugin</artifactId>
-      <version>2.1</version>
-      <configuration>
-        <dependencyLocationEnabled>false</dependencyLocationEnabled>
-       </configuration>
-         <reportSets>
-          <reportSet>
-            <reports>
-              <report>project-team</report>
-              <report>mailing-list</report>
-              <report>cim</report>
-              <report>issue-tracking</report>
-              <report>license</report>
-              <report>scm</report>
-            </reports>
-          </reportSet>
-        </reportSets>
-    </plugin>
-  </plugins>
-  </reporting>
-  -->
-
+  
   <distributionManagement>
     <repository>
       <id>maven.jenkins-ci.org</id>

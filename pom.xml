@@ -12,7 +12,7 @@
   <packaging>maven-plugin</packaging>
   <name>Maven Jenkins Dev Plugin (Jetty)</name>
   <properties>
-    <mavenVersion>3.0.3</mavenVersion>
+    <mavenVersion>3.5.4</mavenVersion>
     <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
@@ -185,12 +185,17 @@
        <scope>compile</scope>
      </dependency>
   </dependencies>
-  
+
   <distributionManagement>
     <repository>
+      <uniqueVersion>false</uniqueVersion>
       <id>maven.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/releases/</url>
     </repository>
+    <snapshotRepository>
+      <id>maven.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/snapshots/</url>
+    </snapshotRepository>
   </distributionManagement>
 
   <scm>
@@ -202,13 +207,13 @@
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
+      <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
       <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
+      <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
 </project>  

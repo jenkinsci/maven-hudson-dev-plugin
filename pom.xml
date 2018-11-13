@@ -15,6 +15,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <it.debug>false</it.debug>
+    <jetty.version>9.4.12.v20180830</jetty.version>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
   </properties>
@@ -92,6 +93,7 @@
           <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
           <settingsFile>src/it/settings.xml</settingsFile>
           <scriptVariables>
+            <jetty.version>${jetty.version}</jetty.version>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <surefireVersion>${surefireVersion}</surefireVersion>

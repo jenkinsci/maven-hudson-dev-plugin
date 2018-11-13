@@ -36,8 +36,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
+      <groupId>@project.groupId@</groupId>
+      <artifactId>@project.artifactId@</artifactId>
       <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
@@ -78,13 +78,13 @@
             <helloServlet>true</helloServlet>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+            <dependency>@project.groupId@:@project.artifactId@</dependency>
           </dependenciesToScan>
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
+        <groupId>@project.groupId@</groupId>
+        <artifactId>@project.artifactId@</artifactId>
         <executions>
           <execution>
             <id>start-jetty</id>

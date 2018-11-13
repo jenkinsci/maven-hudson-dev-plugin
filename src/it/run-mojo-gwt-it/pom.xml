@@ -9,7 +9,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty.version>@project.version@</jetty.version>
+    <jetty.version>@jetty.version@</jetty.version>
   </properties>
 
   <dependencyManagement>
@@ -51,9 +51,9 @@
           </configuration>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
-          <version>${jetty.version}</version>
+          <groupId>@project.groupId@</groupId>
+          <artifactId>@project.artifactId@</artifactId>
+          <version>@project.version@</version>
           <configuration>
           </configuration>
         </plugin>

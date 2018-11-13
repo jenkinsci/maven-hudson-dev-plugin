@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,20 +24,24 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -60,16 +64,16 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
      * 
      * @since jetty-7.5.2
-     * @parameter  default-value="false"
      */
+    @Parameter(defaultValue = "false")
     protected boolean useProvidedScope;
     
     /**
      * List of goals that are NOT to be used
      * 
      * @since jetty-7.5.2
-     * @parameter
      */
+    @Parameter
     protected String[] excludedGoals;
     
     /**
@@ -77,9 +81,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
      * Optional.
      * 
-     * 
-     * @parameter
      */
+    @Parameter
     protected ContextHandler[] contextHandlers;
     
     /**
@@ -87,9 +90,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
      * Optional.
      * 
-     * 
-     * @parameter
      */
+    @Parameter
     protected LoginService[] loginServices;
 
     /**
@@ -97,9 +99,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * Consider using instead the &lt;jettyXml&gt; element to specify external jetty xml config file. 
      * Optional.
      * 
-     *
-     * @parameter
      */
+    @Parameter
     protected RequestLog requestLog;
     
     /**
@@ -108,8 +109,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * flexible method of configuration, rather than using the (deprecated) individual
      * parameters like "tmpDirectory", "contextPath" etc.
      * 
-     * @parameter alias="webAppConfig"
      */
+    @Parameter(alias = "webAppConfig")
     protected JettyWebAppContext webApp;
 
     /**
@@ -117,9 +118,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * and restart the context if necessary. Ignored if reload
      * is enabled. Disabled by default.
      * 
-     * @parameter property="jetty.scanIntervalSeconds" default-value="0"
-     * @required
      */
+    @Parameter(property = "jetty.scanIntervalSeconds", defaultValue = "0", required = true)
     protected int scanIntervalSeconds;
     
     /**
@@ -127,9 +127,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      *
      * if 'manual' then the context can be reloaded by a linefeed in the console
      * if 'automatic' then traditional reloading on changed files is enabled.
-     * 
-     * @parameter property="jetty.reload" default-value="automatic"
+     *
      */
+    @Parameter(property = "jetty.reload", defaultValue = "automatic")
     protected String reload;
 
     
@@ -140,8 +140,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * that have been set on the command line, by the JVM, or directly 
      * in the POM via systemProperties. Optional.
      * 
-     * @parameter property="jetty.systemPropertiesFile"
      */
+    @Parameter(property = "jetty.systemPropertiesFile")
     protected File systemPropertiesFile;
 
     
@@ -151,111 +151,99 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * that have been set on the command line or by the JVM. They WILL 
      * override System properties that have been set via systemPropertiesFile.
      * Optional.
-     * @parameter
      */
+    @Parameter
     protected SystemProperties systemProperties;
     
     
     /**
      * Comma separated list of a jetty xml configuration files whose contents 
      * will be applied before any plugin configuration. Optional.
-     * 
-     * 
-     * @parameter alias="jettyConfig"
+     *
      */
+    @Parameter(alias="jettyConfig")
     protected String jettyXml;
     
     
     /**
      * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt; 
      * -DSTOP.KEY=&lt;stopKey&gt; -jar start.jar --stop
-     * 
-     * @parameter
+     *
      */
+    @Parameter
     protected int stopPort;
     
     
     /**
      * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
-     * 
-     * @parameter
+     *
      */
+    @Parameter
     protected String stopKey;
 
     /**
      * Use the dump() facility of jetty to print out the server configuration to logging
-     * 
-     * @parameter property="dumponStart" default-value="false"
+     *
      */
+    @Parameter( property="dumponStart", defaultValue="false")
     protected boolean dumpOnStart;
     
     
     /**  
      * Skip this mojo execution.
-     * 
-     * @parameter property="jetty.skip" default-value="false"
      */
+    @Parameter(property="jetty.skip", defaultValue="false")
     protected boolean skip;
 
     
     /**
      * Location of a context xml configuration file whose contents
      * will be applied to the webapp AFTER anything in &lt;webApp&gt;.Optional.
-     * 
-     * 
-     * @parameter alias="webAppXml"
+     *
      */
+    @Parameter(alias="webAppXml")
     protected String contextXml;
 
 
     /**
      * The maven project.
      *
-     * @parameter default-value="${project}"
-     * @readonly
      */
+    @Parameter(defaultValue="${project}", readonly = true)
     protected MavenProject project;
 
     
     /**
      * The artifacts for the project.
-     * 
-     * @parameter default-value="${project.artifacts}"
-     * @readonly
+     *
      */
-    protected Set projectArtifacts;
+    @Parameter(defaultValue="${project.artifacts}", readonly = true)
+    protected Set<Artifact> projectArtifacts;
     
     
-    /** 
-     * @parameter default-value="${mojoExecution}" 
-     * @readonly
-     */
-    protected org.apache.maven.plugin.MojoExecution execution;
-    
+    @Parameter(defaultValue="${mojoExecution}", readonly = true)
+    protected MojoExecution execution;
 
     /**
      * The artifacts for the plugin itself.
-     * 
-     * @parameter default-value="${plugin.artifacts}"
-     * @readonly
+     *
      */
-    protected List pluginArtifacts;
-    
-    
+    @Parameter(defaultValue="${plugin.artifacts}", readonly = true)
+    protected List<Artifact> pluginArtifacts;
 
     /**
      * A ServerConnector to use.
-     * 
-     * @parameter
+     *
      */
+    @Parameter
     protected MavenServerConnector httpConnector;
     
     
     /**
      * A wrapper for the Server object
-     * @parameter
      */
+    @Parameter
     protected Server server;
     
     
@@ -264,18 +252,14 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected PathWatcher scanner;
     
-    
-    
+
     /**
      * A scanner to check ENTER hits on the console
      */
     protected Thread consoleScanner;
     
     protected ServerSupport serverSupport;
-    
-    
-    
-    
+
     /**
      * <p>
      * Determines whether or not the server blocks when started. The default
@@ -288,47 +272,82 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * is the behaviour of the jetty:start and default behaviour of the jetty:deploy goals.
      * </p>
      */
-    protected boolean nonblocking = false;
+    @Parameter(defaultValue = "false")
+    protected boolean nonBlocking = false;
+
+    /**
+     * Per default this goal support only <code>war</code> packaging.
+     * If your project use an other type please configure it here.
+     *
+     */
+    @Parameter
+    protected List<String> supportedPackagings = Collections.singletonList( "war");
       
     
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
     
-    public abstract void checkPomConfiguration() throws MojoExecutionException;    
-    
-    
-    public abstract void configureScanner () throws MojoExecutionException;
-    
+    public boolean checkPomConfiguration() throws MojoExecutionException
+    {
+        return true;
+    }
 
-    
+    public abstract void configureScanner () throws MojoExecutionException;
+
+    protected String getSkipMessage(String reason)
+    {
+        String projectName = project.getName();
+        if (StringUtils.isBlank(projectName))
+        {
+            projectName = project.getGroupId() + ":" + project.getArtifactId();
+        }
+        return "Skipping " + projectName + " : " + reason;
+    }
+
+    public boolean checkPackagingConfiguration()
+    {
+        if (!supportedPackagings.contains( project.getPackaging() ))
+        {
+            getLog().info(getSkipMessage("packaging type [" + project.getPackaging() + "] is unsupported"));
+            return false;
+        }
+        return true;
+    }
 
 
     /** 
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        getLog().info("Configuring Jetty for project: " + this.project.getName());
-        if (skip)
+        if (isConfigurationSupported())
         {
-            getLog().info("Skipping Jetty start: jetty.skip==true");
-            return;
-        }
+            if (skip)
+            {
+                getLog().info(getSkipMessage("jetty.skip==true"));
+                return;
+            }
 
-        if (isExcluded(execution.getMojoDescriptor().getGoal()))
-        {
-            getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
-                          "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
-            return;
+            getLog().info("Configuring Jetty for project: " + this.project.getName());
+
+            if (isExcluded(execution.getMojoDescriptor().getGoal()))
+            {
+                getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
+                              "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
+                return;
+            }
+
+            configurePluginClasspath();
+            PluginLog.setLog(getLog());
+            startJetty();
         }
-        
-        configurePluginClasspath();
-        PluginLog.setLog(getLog());
-        checkPomConfiguration();
-        startJetty();
     }
     
-    
+    public boolean isConfigurationSupported() throws MojoExecutionException
+    {
+        return (checkPackagingConfiguration() && checkPomConfiguration());
+    }
     
     
     public void configurePluginClasspath() throws MojoExecutionException
@@ -341,12 +360,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         {
             try
             {
-                List<URL> provided = new ArrayList<URL>();
-                URL[] urls = null;
-               
-                for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+                List<URL> provided = new ArrayList<>();
+
+                for ( Artifact artifact : projectArtifacts)
                 {                   
-                    Artifact artifact = iter.next();
                     if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
                     {
                         provided.add(artifact.getFile().toURI().toURL());
@@ -356,8 +373,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
                 if (!provided.isEmpty())
                 {
-                    urls = new URL[provided.size()];
-                    provided.toArray(urls);
+                    URL[] urls = provided.stream().toArray(URL[]::new);
                     URLClassLoader loader  = new URLClassLoader(urls, getClass().getClassLoader());
                     Thread.currentThread().setContextClassLoader(loader);
                     getLog().info("Plugin classpath augmented with <scope>provided</scope> dependencies: "+Arrays.toString(urls));
@@ -375,23 +391,22 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
             return false;
         
-        boolean isPluginArtifact = false;
-        for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext() && !isPluginArtifact; )
+        for (Artifact pluginArtifact : pluginArtifacts )
         {
-            Artifact pluginArtifact = iter.next();
             if (getLog().isDebugEnabled()) { getLog().debug("Checking "+pluginArtifact);}
-            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
-                isPluginArtifact = true;
+            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) //
+                && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
+                return true;
         }
         
-        return isPluginArtifact;
+        return false;
     }
 
     public void finishConfigurationBeforeStart() throws Exception
     {
-        HandlerCollection contexts = (HandlerCollection)server.getChildHandlerByClass(ContextHandlerCollection.class);
+        HandlerCollection contexts = server.getChildHandlerByClass(ContextHandlerCollection.class);
         if (contexts==null)
-            contexts = (HandlerCollection)server.getChildHandlerByClass(HandlerCollection.class);
+            contexts = server.getChildHandlerByClass(HandlerCollection.class);
         
         for (int i=0; (this.contextHandlers != null) && (i < this.contextHandlers.length); i++)
         {
@@ -429,11 +444,13 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             // if a <httpConnector> was specified in the pom, use it
             if (httpConnector != null)
             {
+
                 // check that its port was set
                 if (httpConnector.getPort() <= 0)
                 {
                     //use any jetty.http.port settings provided
-                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, //
+                                                    System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
                 httpConnector.setServer(server);
@@ -459,7 +476,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             // start Jetty
             this.server.start();
 
-            getLog().info("Started Jetty Server");
+            getLog().info( "Started Jetty Server" );
 
             if ( dumpOnStart )
             {
@@ -478,10 +495,11 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             startConsoleScanner();
 
             // keep the thread going if not in daemon mode
-            if (!nonblocking )
+            if (!nonBlocking )
             {
                 server.join();
             }
+
         }
         catch (Exception e)
         {
@@ -489,7 +507,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
         finally
         {
-            if (!nonblocking )
+            if (!nonBlocking )
             {
                 getLog().info("Jetty server exiting.");
             }            
@@ -504,7 +522,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             ShutdownMonitor monitor = ShutdownMonitor.getInstance();
             monitor.setPort(stopPort);
             monitor.setKey(stopKey);
-            monitor.setExitVm(!nonblocking);
+            monitor.setExitVm(!nonBlocking );
         }
     }
 
@@ -530,8 +548,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         //context xml file can OVERRIDE those settings
         if (contextXml != null)
         {
-            File file = FileUtils.getFile(contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(file));
+            Path path = Paths.get(contextXml);
+            if (!path.isAbsolute())
+            {
+                Path workDir = Paths.get(System.getProperty("user.dir"));
+                path = workDir.resolve(path);
+                contextXml = path.toFile().getAbsolutePath();
+            }
+    
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
             getLog().info("Applying context xml file "+contextXml);
             xmlConfiguration.configure(webApp);   
         }
@@ -619,12 +644,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         {
             if (systemProperties != null)
             {
-                Iterator itor = systemProperties.getSystemProperties().iterator();
-                while (itor.hasNext())
-                {
-                    SystemProperty prop = (SystemProperty)itor.next();
+                systemProperties.getSystemProperties().stream().forEach( prop -> {
                     getLog().debug("Property "+prop.getName()+"="+prop.getValue()+" was "+ (prop.isSet() ? "set" : "skipped"));
-                }
+                } );
             }
         }
     }

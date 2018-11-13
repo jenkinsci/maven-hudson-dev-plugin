@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,11 @@ import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
@@ -39,31 +44,22 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
  *  </p>
- *
- *@goal run-exploded
- *@requiresDependencyResolution compile+runtime
- *@execute phase=package
  */
+@Mojo( name = "run-exploded", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Execute(phase = LifecyclePhase.PACKAGE)
 public class JettyRunWarExplodedMojo extends AbstractJettyMojo
 {
-
-    
     
     /**
      * The location of the war file.
-     * 
-     * @parameter default-value="${project.build.directory}/${project.build.finalName}"
-     * @required
      */
+    @Parameter(defaultValue="${project.build.directory}/${project.build.finalName}", required = true)
     private File war;
 
-    
-   
-  
-   
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
+    @Override
     public void execute () throws MojoExecutionException, MojoFailureException
     {
         super.execute();
@@ -77,23 +73,12 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         server.setStopAtShutdown(true); //as we will normally be stopped with a cntrl-c, ensure server stopped 
         super.finishConfigurationBeforeStart();
     }
+    
 
-    
-    /**
-     * 
-     * @see AbstractJettyMojo#checkPomConfiguration()
-     */
-    public void checkPomConfiguration() throws MojoExecutionException
-    {
-        return;
-    }
-
-    
-    
-    
     /**
      * @see AbstractJettyMojo#configureScanner()
      */
+    @Override
     public void configureScanner() throws MojoExecutionException
     {
         scanner.watch(project.getFile().toPath());
@@ -157,6 +142,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
      */
+    @Override
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("Restarting webapp");
@@ -188,6 +174,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
      */
+    @Override
     public void configureWebApplication () throws Exception
     {
         super.configureWebApplication();        

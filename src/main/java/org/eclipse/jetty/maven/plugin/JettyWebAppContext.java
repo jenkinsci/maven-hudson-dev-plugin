@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,9 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.PreconfigureDescriptorProcessor;
 import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -47,12 +45,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 /**
  * JettyWebAppContext
@@ -73,7 +67,14 @@ public class JettyWebAppContext extends WebAppContext
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
     
-    
+
+    public static final String[] MINIMUM_CONFIGURATION_CLASSES = {
+                                                                  "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
+                                                                  "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                                  "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                                                                  "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                                  "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+                                                                 }; 
     public  static final String[] DEFAULT_CONFIGURATION_CLASSES = {
                                                            "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
                                                            "org.eclipse.jetty.webapp.WebXmlConfiguration",
@@ -86,7 +87,7 @@ public class JettyWebAppContext extends WebAppContext
                                                            };
 
 
-    private final String[] QUICKSTART_CONFIGURATION_CLASSES = {
+    public static final String[] QUICKSTART_CONFIGURATION_CLASSES = {
                                                                 "org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration",
                                                                 "org.eclipse.jetty.plus.webapp.EnvConfiguration",
                                                                 "org.eclipse.jetty.plus.webapp.PlusConfiguration",
@@ -95,18 +96,15 @@ public class JettyWebAppContext extends WebAppContext
 
     private File _classes = null;
     private File _testClasses = null;
-    private final List<File> _webInfClasses = new ArrayList<File>();
-    private final List<File> _webInfJars = new ArrayList<File>();
+    private final List<File> _webInfClasses = new ArrayList<>();
+    private final List<File> _webInfJars = new ArrayList<>();
     private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
-    private List<File> _classpathFiles;  //webInfClasses+testClasses+webInfJars
+    private List<File> _classpathFiles; //webInfClasses+testClasses+webInfJars
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
     private String _originAttribute;
     private boolean _generateOrigin;
-   
-    
- 
     
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
@@ -321,6 +319,11 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _webInfJars;
     }
+
+    public List<File> getWebInfClasses()
+    {
+        return _webInfClasses;
+    }
     
     /* ------------------------------------------------------------ */
     public void setGenerateQuickStart (boolean quickStart)
@@ -333,7 +336,7 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _isGenerateQuickStart;
     }
-    
+
    
     
     /* ------------------------------------------------------------ */
@@ -373,18 +376,11 @@ public class JettyWebAppContext extends WebAppContext
     @Override
     public void doStart () throws Exception
     {
-        //choose if this will be a quickstart or normal start
-        if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
+
+        if (isGenerateQuickStart())
         {
-            setConfigurationClasses(QUICKSTART_CONFIGURATION_CLASSES);
-        }
-        else
-        { 
-            if (isGenerateQuickStart())
-            {
-                _preconfigProcessor = new PreconfigureDescriptorProcessor();
-                getMetaData().addDescriptorProcessor(_preconfigProcessor);
-            }
+            _preconfigProcessor = new PreconfigureDescriptorProcessor();
+            getMetaData().addDescriptorProcessor(_preconfigProcessor);
         }
 
         //Set up the pattern that tells us where the jars are that need scanning
@@ -411,7 +407,7 @@ public class JettyWebAppContext extends WebAppContext
             _webInfClasses.add(_classes);
         
         // Set up the classpath
-        _classpathFiles = new ArrayList<File>();
+        _classpathFiles = new ArrayList<>();
         _classpathFiles.addAll(_webInfClasses);
         _classpathFiles.addAll(_webInfJars);
 
@@ -442,14 +438,13 @@ public class JettyWebAppContext extends WebAppContext
         for (Configuration c:getConfigurations())
         {
             if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));       
         }
     }
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop () throws Exception
     { 
         if (_classpathFiles != null)
@@ -568,7 +563,7 @@ public class JettyWebAppContext extends WebAppContext
         
         if (path != null)
         {
-            TreeSet<String> allPaths = new TreeSet<String>();
+            TreeSet<String> allPaths = new TreeSet<>();
             allPaths.addAll(paths);
             
             //add in the dependency jars as a virtual WEB-INF/lib entry

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -143,13 +143,13 @@ public class OverlayConfig
             for (int j=0; list != null && j < list.length;j++)
             {
                 if (includes == null)
-                    includes = new ArrayList<String>();
+                    includes = new ArrayList<>();
                 includes.add(list[j].getValue());
             }
         }
         if (includes == null && defaultIncludes != null)
         {
-            includes = new ArrayList<String>();
+            includes = new ArrayList<>();
             includes.addAll(defaultIncludes);
         }
         setIncludes(includes);
@@ -163,13 +163,13 @@ public class OverlayConfig
             for (int j=0; list != null && j < list.length;j++)
             {
                 if (excludes == null)
-                    excludes = new ArrayList<String>();
+                    excludes = new ArrayList<>();
                 excludes.add(list[j].getValue());
             }
         }
         if (excludes == null && defaultExcludes != null)
         {
-            excludes = new ArrayList<String>();
+            excludes = new ArrayList<>();
             excludes.addAll(defaultExcludes);
         }
         setExcludes(excludes);
@@ -296,10 +296,11 @@ public class OverlayConfig
 
         return false;
     }
-    
+
+    @Override
     public String toString()
     {
-        StringBuffer strbuff = new StringBuffer();
+        StringBuilder strbuff = new StringBuilder();
         strbuff.append((groupId != null ? groupId : "")+",");
         strbuff.append((artifactId != null ? artifactId : "")+",");
         strbuff.append((classifier != null ? classifier : "")+",");

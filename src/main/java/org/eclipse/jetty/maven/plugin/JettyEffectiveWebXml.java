@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,45 +24,57 @@ import java.io.IOException;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
- * JettyEffectiveWebXml
+ * This goal runs the jetty quickstart feature on an unassembled webapp in order to generate
+ * a comprehensive web.xml that combines all information from annotations, webdefault.xml and all web-fragment.xml
+ * files. By default, the web.xml is generated to the console output only. Use the <b>effectiveWebXml</b> parameter
+ * to provide a file name into which to save the output.
+ * 
+ * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *
- * @goal effective-web-xml
- * @requiresDependencyResolution test
- * @execute phase="test-compile"
- * @description Runs jetty on the unassembled webapp to generate the effective web.xml
+ * Runs jetty on the unassembled webapp to generate the effective web.xml
  */
+@Mojo( name = "effective-web-xml", requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyEffectiveWebXml extends JettyRunMojo
 {
     /**
      * The target directory
+<<<<<<< HEAD
      * 
      * @parameter default-value="${project.build.directory}"
      * @required
      * @readonly
+=======
+>>>>>>> incoming
      */
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     protected File target;
     
     /**
      * The name of the file to generate into
      * 
-     * @parameter 
      */
+    @Parameter
     protected File effectiveWebXml;
-    
-    
-    
+
     protected boolean deleteOnExit = true;
     
 
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         super.execute();
@@ -72,10 +84,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     @Override
     public void startJetty() throws MojoExecutionException
     {
-        //Only do enough setup to be able to produce a quickstart-web.xml file 
-        
-
-        
+        //Only do enough setup to be able to produce a quickstart-web.xml file
         QueuedThreadPool tpool = null;
         
         try

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * be referenced in the pom.xml. This class wraps a ServerConnector, delaying setting the
  * server instance. Only a few of the setters from the ServerConnector class are supported.
  */
-public class MavenServerConnector extends AbstractLifeCycle implements Connector
+public class MavenServerConnector extends ContainerLifeCycle implements Connector
 {
     public static String PORT_SYSPROPERTY = "jetty.http.port";
     
@@ -54,14 +54,12 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     public static final int DEFAULT_MAX_IDLE_TIME = 30000;
     
     private Server server;
-    private ServerConnector delegate;
+    private volatile ServerConnector delegate;
     private String host;
     private String name;
     private int port;
     private long idleTimeout;
-    private int lingerTime;
-    
-    
+
     public MavenServerConnector()
     {
     }
@@ -100,10 +98,14 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     {
         this.idleTimeout = idleTimeout;
     }
-    
+
+    /**
+     * @param lingerTime the socket close linger time
+     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
+     */
+    @Deprecated
     public void setSoLingerTime(int lingerTime)
     {
-        this.lingerTime = lingerTime;
     }
     
     @Override
@@ -118,7 +120,6 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
         this.delegate.setPort(this.port);
         this.delegate.setHost(this.host);
         this.delegate.setIdleTimeout(idleTimeout);
-        this.delegate.setSoLingerTime(lingerTime);
         this.delegate.start();
 
         super.doStart();
@@ -132,33 +133,28 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
         this.delegate = null;
     }
 
-    /** 
-     * @see org.eclipse.jetty.util.component.Graceful#shutdown()
-     */
     @Override
     public Future<Void> shutdown()
     {
-        checkDelegate();
-        return this.delegate.shutdown();
+        return checkDelegate().shutdown();
+    }
+    
+    @Override
+    public boolean isShutdown()
+    {
+        return checkDelegate().isShutdown();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.Connector#getServer()
-     */
     @Override
     public Server getServer()
     {
         return this.server;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.Connector#getExecutor()
-     */
     @Override
     public Executor getExecutor()
     {
-        checkDelegate();
-        return this.delegate.getExecutor();
+        return checkDelegate().getExecutor();
     }
 
     /** 
@@ -167,8 +163,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public Scheduler getScheduler()
     {
-        checkDelegate();
-        return this.delegate.getScheduler();
+        return checkDelegate().getScheduler();
     }
 
     /** 
@@ -177,8 +172,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        checkDelegate();
-        return this.delegate.getByteBufferPool();
+        return checkDelegate().getByteBufferPool();
     }
 
     /** 
@@ -187,8 +181,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public ConnectionFactory getConnectionFactory(String nextProtocol)
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactory(nextProtocol);
+        return checkDelegate().getConnectionFactory(nextProtocol);
     }
 
     /** 
@@ -197,8 +190,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactory(factoryType);
+        return checkDelegate().getConnectionFactory(factoryType);
     }
 
     /** 
@@ -207,8 +199,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
-        checkDelegate();
-        return this.delegate.getDefaultConnectionFactory();
+        return checkDelegate().getDefaultConnectionFactory();
     }
 
     /** 
@@ -217,8 +208,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public Collection<ConnectionFactory> getConnectionFactories()
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactories();
+        return checkDelegate().getConnectionFactories();
     }
 
     /** 
@@ -227,8 +217,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public List<String> getProtocols()
     {
-        checkDelegate();
-        return this.delegate.getProtocols();
+        return checkDelegate().getProtocols();
     }
 
     /** 
@@ -238,8 +227,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout()
     {
-        checkDelegate();
-        return this.delegate.getIdleTimeout();
+        return checkDelegate().getIdleTimeout();
     }
 
     /** 
@@ -248,8 +236,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public Object getTransport()
     {
-        checkDelegate();
-        return this.delegate.getTransport();
+        return checkDelegate().getTransport();
     }
 
     /** 
@@ -258,8 +245,7 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     @Override
     public Collection<EndPoint> getConnectedEndPoints()
     {
-        checkDelegate();
-        return this.delegate.getConnectedEndPoints();
+        return checkDelegate().getConnectedEndPoints();
     }
 
     /** 
@@ -270,10 +256,17 @@ public class MavenServerConnector extends AbstractLifeCycle implements Connector
     {
         return this.name;
     }
-    
-    private void checkDelegate() throws IllegalStateException
+
+    public int getLocalPort()
     {
-        if (this.delegate == null)
+        return this.delegate.getLocalPort();
+    }
+    
+    private ServerConnector checkDelegate() throws IllegalStateException
+    {
+        ServerConnector d = this.delegate;
+        if (d == null)
             throw new IllegalStateException ("MavenServerConnector delegate not ready");
+        return d;
     }
 }

@@ -28,7 +28,7 @@ for (int i = 0; i < platforms.size(); ++i) {
 
                 stage('Archive') {
                     /* Archive the test results */
-                    junit testResults:'**/target/surefire-reports/TEST-*.xml', allowEmptyResults: false
+                    junit testResults:'**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true
 
                     /* Archive the build artifacts */
                     archiveArtifacts artifacts: 'target/**/*.jar'

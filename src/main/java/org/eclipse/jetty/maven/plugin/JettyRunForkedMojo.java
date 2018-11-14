@@ -55,7 +55,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <p>
  * You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
  * configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
-<<<<<<< HEAD
  * about your webapp.
  * <p>
  * Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
@@ -66,9 +65,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * you can use the <b>jetty:stop</b> goal to terminate the process.
  * <p>
  * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
-=======
->>>>>>> incoming
- * 
+ *
  * <p>
  * Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
  * <p>

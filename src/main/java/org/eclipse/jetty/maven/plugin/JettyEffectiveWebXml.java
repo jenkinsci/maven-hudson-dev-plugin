@@ -50,13 +50,6 @@ public class JettyEffectiveWebXml extends JettyRunMojo
 {
     /**
      * The target directory
-<<<<<<< HEAD
-     * 
-     * @parameter default-value="${project.build.directory}"
-     * @required
-     * @readonly
-=======
->>>>>>> incoming
      */
     @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     protected File target;

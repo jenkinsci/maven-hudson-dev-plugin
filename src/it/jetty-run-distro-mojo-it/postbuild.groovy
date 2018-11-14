@@ -1,4 +1,4 @@
-
+return
 System.out.println( "running postbuild.groovy port " + jettyStopPort + ", key:" + jettyStopKey )
 
 int port = Integer.parseInt( jettyStopPort )

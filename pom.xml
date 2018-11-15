@@ -237,7 +237,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
       <scope>test</scope>
       <type>zip</type>
     </dependency>
